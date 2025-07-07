@@ -1,0 +1,83 @@
+# CMake build directories
+/build/
+*/build/
+CMakeFiles/
+CMakeCache.txt
+CMakeOutput.log
+CMakeError.log
+
+# Qt-related files
+*.pro.user
+*.pro.user.* 
+*.pro.pth
+*.moc
+*.qrc.cpp
+*.o
+*.obj
+*.so
+*.dylib
+
+# Qt Creator specific files
+*.autosave
+*.qmlproject.user
+*.qmlproject.user.*
+
+# User-specific files
+*.user
+*.user.*
+*.swp
+*.swo
+*.swn
+*.bak
+*.orig
+*.tmp
+
+# macOS specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Other files
+*.class
+*.jar
+*.exe
+*.dll
+*.pdb
+*.idb
+*.ilk
+*.sdf
+*.suo
+*.ncb
+*.scc
+*.aps
+*.pch
+*.ipch
+*.dbmdl
+*.dbproj.schemaview
+*.dbproj
+*.jfm
+*.jfm.log
+*.jfm2
+
+# Ignore Qt build directory
+*.moc
+*.qrc.cpp
+*.ui.h
+
+# Ignore the generated files from the Qt build
+*.h.gch
+*.moc
+*.o
+*.obj
+
+# Ignore coverage information
+*.gcda
+*.gcno
+*.gcov
