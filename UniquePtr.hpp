@@ -5,9 +5,6 @@
 
 #include <utility>
 
-// TODO:
-// MakeUnique
-
 namespace mybicycles
 {
 
@@ -34,19 +31,14 @@ public:
     explicit operator bool() const noexcept;
     bool operator== (std::nullptr_t) const noexcept;
     bool operator!= (std::nullptr_t) const noexcept;
-    T& operator* () const noexcept;
+    T& operator* () const;
     T* operator-> () const noexcept;
 
     static void swap(UniquePtr<T, Deleter>& lhs, UniquePtr<T, Deleter>& rhs) noexcept;
 
 private:
-    static const Deleter sDeleter;
-
     T* mPtr;
 };
-
-template <typename T, typename Deleter>
-const Deleter UniquePtr<T, Deleter>::sDeleter = {};
 
 template <typename T, typename Deleter>
 inline UniquePtr<T, Deleter>::UniquePtr() noexcept :
@@ -73,10 +65,9 @@ inline UniquePtr<T, Deleter>& UniquePtr<T, Deleter>::operator= (UniquePtr<T, Del
 {
     if (this != &rhs)
     {
-        T* tmp = mPtr;
+        reset();
         mPtr = rhs.mPtr;
         rhs.mPtr = nullptr;
-        sDeleter(tmp);
     }
     return *this;
 }
@@ -84,7 +75,7 @@ inline UniquePtr<T, Deleter>& UniquePtr<T, Deleter>::operator= (UniquePtr<T, Del
 template <typename T, typename Deleter>
 inline UniquePtr<T, Deleter>::~UniquePtr()
 {
-    sDeleter(mPtr);
+    reset();
 }
 
 template <typename T, typename Deleter>
@@ -100,7 +91,7 @@ inline void UniquePtr<T, Deleter>::reset(T* ptr) noexcept
 {
     T* tmp = mPtr;
     mPtr = ptr;
-    sDeleter(tmp);
+    Deleter::deletePtr(tmp);
 }
 
 template <typename T, typename Deleter>
@@ -143,7 +134,7 @@ inline bool UniquePtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
 }
 
 template <typename T, typename Deleter>
-inline T& UniquePtr<T, Deleter>::operator* () const noexcept
+inline T& UniquePtr<T, Deleter>::operator* () const
 {
     // Undefined behavior if mPtr is nullptr
     // May throw if mPtr's operator* throws

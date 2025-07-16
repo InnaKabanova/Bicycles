@@ -146,11 +146,11 @@ void testSharedPtr_DefaultDeleter()
 
 int main()
 {
-    // testUniquePtr_DefaultDeleter();
+    testUniquePtr_DefaultDeleter();
     // testUniquePtr_CustomDeleter();
     // testUniquePtr_RawArray_CustomDeleter();
 
-    testSharedPtr_DefaultDeleter();
+    // testSharedPtr_DefaultDeleter();
 
     return 0;
 }
