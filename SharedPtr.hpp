@@ -38,14 +38,9 @@ public:
     static void swap(SharedPtr<T, Deleter>& lhs, SharedPtr<T, Deleter>& rhs);
 
 private:
-    static const Deleter sDeleter;
-
     T* mPtr;
     unsigned int* mUseCount;
 };
-
-template<typename T, typename Deleter>
-const Deleter SharedPtr<T, Deleter>::sDeleter = {};
 
 template<typename T, typename Deleter>
 inline SharedPtr<T, Deleter>::SharedPtr() noexcept :
@@ -70,7 +65,7 @@ inline SharedPtr<T, Deleter>::~SharedPtr()
         if (0 == (*mUseCount))
         {
             delete mUseCount;
-            sDeleter(mPtr);
+            Deleter::deletePtr(mPtr);
         }
     }
 }
@@ -139,7 +134,7 @@ inline void SharedPtr<T, Deleter>::reset(T* rhs) noexcept
         {
             delete mUseCount;
             mUseCount = nullptr;
-            sDeleter(mPtr);
+            Deleter::deletePtr(mPtr);
         }
     }
 
