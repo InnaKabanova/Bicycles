@@ -8,8 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(MyBicycles main.cpp
     SharedPtr.hpp
     UniquePtr.hpp
-    Bicycle.hpp Bicycle.cpp
-    Deleter.hpp)
+    Bicycle.hpp
+    BicycleImpl.hpp
+    Deleter.hpp
+
+    BicycleImpl.cpp)
 
 include(GNUInstallDirs)
 install(TARGETS MyBicycles
