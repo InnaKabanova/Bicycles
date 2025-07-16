@@ -27,12 +27,15 @@ if (NOT GTest_FOUND)
     message (FATAL_ERROR "No GTest Found")
 endif()
 
-add_executable(MyBicyclesTest main.cpp tst_UniquePtr.cpp
+add_executable(MyBicyclesTest
+    main.cpp
+    MockBicycle.hpp
+    tst_UniquePtr.cpp
     tst_SharedPtr.cpp)
 target_include_directories(MyBicyclesTest PRIVATE ${CMAKE_SOURCE_DIR}/../)
 add_test(NAME MyBicyclesTest COMMAND MyBicyclesTest)
 
-target_link_libraries(MyBicyclesTest PRIVATE GTest::GTest)
+target_link_libraries(MyBicyclesTest PRIVATE GTest::GTest gmock)
 if (GMock_FOUND)
     target_link_libraries(MyBicyclesTest INTERFACE GTest::GMock)
 endif()
