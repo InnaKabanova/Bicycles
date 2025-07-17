@@ -13,7 +13,7 @@ class SharedPtr
 {
 public:
     SharedPtr() noexcept;
-    SharedPtr(T* raw) noexcept;
+    explicit SharedPtr(T* raw) noexcept;
 
     SharedPtr(const SharedPtr<T, Deleter>& rhs) noexcept;
     SharedPtr& operator= (const SharedPtr<T, Deleter>& rhs) noexcept;
@@ -25,15 +25,15 @@ public:
     void reset(T* rhs = nullptr) noexcept;
     void swap(SharedPtr<T, Deleter>& rhs) noexcept;
 
-    T* get() const;
-    explicit operator bool() const;
+    T* get() const noexcept;
+    explicit operator bool() const noexcept;
     bool operator== (std::nullptr_t) const noexcept;
     bool operator!= (std::nullptr_t) const noexcept;
     T& operator* () const;
-    T& operator-> () const;
+    T* operator-> () const noexcept;
 
-    unsigned useCount() const;
-    bool isUnique() const;
+    unsigned useCount() const noexcept;
+    bool isUnique() const noexcept;
 
     static void swap(SharedPtr<T, Deleter>& lhs, SharedPtr<T, Deleter>& rhs);
 
@@ -59,15 +59,7 @@ inline SharedPtr<T, Deleter>::SharedPtr(T* raw) noexcept :
 template<typename T, typename Deleter>
 inline SharedPtr<T, Deleter>::~SharedPtr()
 {
-    if (mUseCount != nullptr)
-    {
-        (*mUseCount)--;
-        if (0 == (*mUseCount))
-        {
-            delete mUseCount;
-            Deleter::deletePtr(mPtr);
-        }
-    }
+    reset();
 }
 
 template<typename T, typename Deleter>
@@ -103,7 +95,8 @@ inline SharedPtr<T, Deleter>::SharedPtr(SharedPtr<T, Deleter>&& rhs) noexcept :
     mPtr(rhs.mPtr),
     mUseCount(rhs.mUseCount)
 {
-    rhs.reset();
+    rhs.mPtr = nullptr;
+    rhs.mUseCount = nullptr;
 }
 
 template<typename T, typename Deleter>
@@ -113,11 +106,11 @@ inline SharedPtr<T, Deleter>& SharedPtr<T, Deleter>::operator=(SharedPtr<T, Dele
     {
         if (mPtr != rhs.mPtr)
         {
-            // Free local held resource
-            reset();
+            reset(); // free local held resource
             mPtr = rhs.mPtr;
             mUseCount = rhs.mUseCount;
-            rhs.reset();
+            rhs.mPtr = nullptr;
+            rhs.mUseCount = nullptr;
         }
     }
     return *this;
@@ -154,13 +147,13 @@ inline void SharedPtr<T, Deleter>::swap(SharedPtr<T, Deleter>& rhs) noexcept
 }
 
 template<typename T, typename Deleter>
-inline T *SharedPtr<T, Deleter>::get() const
+inline T *SharedPtr<T, Deleter>::get() const noexcept
 {
     return mPtr;
 }
 
 template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::operator bool() const
+inline SharedPtr<T, Deleter>::operator bool() const noexcept
 {
     return mPtr != nullptr;
 }
@@ -186,22 +179,22 @@ inline T &SharedPtr<T, Deleter>::operator*() const
 }
 
 template<typename T, typename Deleter>
-inline T &SharedPtr<T, Deleter>::operator->() const
+inline T* SharedPtr<T, Deleter>::operator ->() const noexcept
 {
     // Undefined behavior if mPtr is nullptr
     return mPtr;
 }
 
 template<typename T, typename Deleter>
-inline unsigned int SharedPtr<T, Deleter>::useCount() const
+inline unsigned int SharedPtr<T, Deleter>::useCount() const noexcept
 {
     return (mUseCount == nullptr ? 0 : *mUseCount);
 }
 
 template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::isUnique() const
+inline bool SharedPtr<T, Deleter>::isUnique() const noexcept
 {
-    return (*mUseCount == 1 || mUseCount == nullptr);
+    return (mUseCount == nullptr || *mUseCount == 1);
 }
 
 template<typename T, typename Deleter>
@@ -209,7 +202,7 @@ inline void SharedPtr<T, Deleter>::swap(SharedPtr<T, Deleter>& lhs, SharedPtr<T,
 {
     if (&lhs != &rhs)
     {
-        T temp(lhs);
+        SharedPtr<T, Deleter> temp(lhs);
         lhs = rhs;
         rhs = temp;
     }
