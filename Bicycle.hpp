@@ -2,6 +2,7 @@
 #define BICYCLE_HPP
 
 #include <cstdint>
+#include <sstream>
 
 namespace mybicycles
 {
@@ -15,6 +16,11 @@ struct Tyre
 
     int16_t pressure = CITY_BIKE_NORMAL_PRESSURE_PSI;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Tyre& t) {
+    os << "pressure: " << t.pressure << " psi";
+    return os;
+}
 
 /**
  * Interface of a helper class to test my re-invented self-written bicycles

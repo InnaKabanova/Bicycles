@@ -3,6 +3,7 @@
 
 #include "Deleter.hpp"
 
+#include <sstream>
 #include <utility>
 
 namespace mybicycles
@@ -26,11 +27,20 @@ public:
     void swap(SharedPtr<T, Deleter>& rhs) noexcept;
 
     T* get() const noexcept;
-    explicit operator bool() const noexcept;
-    bool operator== (std::nullptr_t) const noexcept;
-    bool operator!= (std::nullptr_t) const noexcept;
+
     T& operator* () const;
     T* operator-> () const noexcept;
+
+    explicit operator bool() const noexcept;
+
+    bool operator== (std::nullptr_t) const noexcept;
+    bool operator== (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator!= (std::nullptr_t) const noexcept;
+    bool operator!= (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator< (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator<= (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator> (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator>= (const SharedPtr<T, Deleter>& rhs) const noexcept;
 
     unsigned useCount() const noexcept;
     bool isUnique() const noexcept;
@@ -153,25 +163,7 @@ inline T *SharedPtr<T, Deleter>::get() const noexcept
 }
 
 template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::operator bool() const noexcept
-{
-    return mPtr != nullptr;
-}
-
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator==(std::nullptr_t) const noexcept
-{
-    return mPtr == nullptr;
-}
-
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
-{
-    return mPtr != nullptr;
-}
-
-template<typename T, typename Deleter>
-inline T &SharedPtr<T, Deleter>::operator*() const
+inline T& SharedPtr<T, Deleter>::operator*() const
 {
     // Undefined behavior if mPtr is nullptr
     // May throw if mPtr's operator* throws
@@ -183,6 +175,60 @@ inline T* SharedPtr<T, Deleter>::operator ->() const noexcept
 {
     // Undefined behavior if mPtr is nullptr
     return mPtr;
+}
+
+template<typename T, typename Deleter>
+inline SharedPtr<T, Deleter>::operator bool() const noexcept
+{
+    return mPtr != nullptr;
+}
+
+template<typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator==(std::nullptr_t) const noexcept
+{
+    return mPtr == nullptr;
+}
+
+template <typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator==(const SharedPtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr == rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
+{
+    return mPtr != nullptr;
+}
+
+template <typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator!=(const SharedPtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr != rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator<(const SharedPtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr < rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator<=(const SharedPtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr < rhs.mPtr || mPtr == rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator>(const SharedPtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr > rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool SharedPtr<T, Deleter>::operator>=(const SharedPtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr > rhs.mPtr || mPtr == rhs.mPtr;
 }
 
 template<typename T, typename Deleter>
@@ -206,6 +252,12 @@ inline void SharedPtr<T, Deleter>::swap(SharedPtr<T, Deleter>& lhs, SharedPtr<T,
         lhs = rhs;
         rhs = temp;
     }
+}
+
+template <typename T, typename Deleter>
+std::ostream& operator<< (std::ostream& os, const SharedPtr<T, Deleter>& sp)
+{
+    return (sp ? os << sp.get() : os << "nullptr");
 }
 
 } // mybicycles

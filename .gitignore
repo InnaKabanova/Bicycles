@@ -1,6 +1,6 @@
 # CMake build directories
-/build/
-*/build/
+build*/
+*/build*/
 CMakeFiles/
 CMakeCache.txt
 CMakeOutput.log

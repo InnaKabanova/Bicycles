@@ -187,3 +187,72 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_Swap_BoolOperators)
         EXPECT_FALSE(sp1);
     }
 }
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_Equality_NonEquality)
+{
+    MockBicycle* mb1 = new MockBicycle("Pinarello");
+    SharedPtr<MockBicycle> sp1;
+    EXPECT_TRUE(sp1 == nullptr);
+    EXPECT_FALSE(sp1 != nullptr);
+
+    sp1.reset(mb1);
+    EXPECT_TRUE(sp1 != nullptr);
+    EXPECT_FALSE(sp1 == nullptr);
+    EXPECT_EQ(sp1, sp1);
+
+    SharedPtr<MockBicycle> sp2 = sp1;
+    EXPECT_EQ(sp1, sp2);
+
+    SharedPtr<MockBicycle> sp3(new MockBicycle("Yeti"));
+    EXPECT_NE(sp2, sp3);
+}
+
+template <typename T>
+class FakePlacementNewDeleter
+{
+public:
+    static void deletePtr(T* ptr) noexcept
+    {
+        ptr->~T();
+        // Deletes nothing, haha
+        // We don't want a segfault in this test
+    }
+};
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_OtherComparisons)
+{
+    // To properly test comparison operators, we want a predictable location of MockBicycle-s
+    // in memory relative to each other
+    void* tmp = operator new(sizeof(MockBicycle) * 2);
+
+    new(tmp) MockBicycle("Norco"); // placement new
+    MockBicycle* mb1 = (MockBicycle*)tmp;
+    new((MockBicycle*)tmp + 1) MockBicycle("Orbea"); // placement new
+    MockBicycle* mb2 = (MockBicycle*)tmp + 1;
+
+    {
+        // We need additional scope because we don't want our UniquePtr-s to call ~MockBicycle on
+        // already free-d memory
+        SharedPtr<MockBicycle, FakePlacementNewDeleter<MockBicycle>> sp1(mb1);
+        SharedPtr<MockBicycle, FakePlacementNewDeleter<MockBicycle>> sp2(mb2);
+        SharedPtr<MockBicycle, FakePlacementNewDeleter<MockBicycle>> sp3 = sp2;
+
+        EXPECT_TRUE(sp1 < sp2);
+        EXPECT_FALSE(sp2 < sp1);
+
+        EXPECT_TRUE(sp2 > sp1);
+        EXPECT_FALSE(sp1 > sp2);
+
+        EXPECT_TRUE(sp1 <= sp2);
+        EXPECT_TRUE(sp1 <= sp1);
+        EXPECT_FALSE(sp2 <= sp1);
+        EXPECT_TRUE(sp2 <= sp3);
+
+        EXPECT_TRUE(sp2 >= sp1);
+        EXPECT_TRUE(sp2 >= sp2);
+        EXPECT_FALSE(sp1 >= sp2);
+        EXPECT_TRUE(sp2 >= sp3);
+    }
+
+    operator delete(tmp);
+}

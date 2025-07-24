@@ -3,6 +3,7 @@
 
 #include "Deleter.hpp"
 
+#include <sstream>
 #include <utility>
 
 namespace mybicycles
@@ -28,11 +29,20 @@ public:
     void swap(UniquePtr<T, Deleter>& rhs) noexcept;
 
     T* get() const noexcept;
-    explicit operator bool() const noexcept;
-    bool operator== (std::nullptr_t) const noexcept;
-    bool operator!= (std::nullptr_t) const noexcept;
+
     T& operator* () const;
     T* operator-> () const noexcept;
+
+    explicit operator bool() const noexcept;
+
+    bool operator== (std::nullptr_t) const noexcept;
+    bool operator== (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator!= (std::nullptr_t) const noexcept;
+    bool operator!= (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator< (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator<= (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator> (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator>= (const UniquePtr<T, Deleter>& rhs) const noexcept;
 
     static void swap(UniquePtr<T, Deleter>& lhs, UniquePtr<T, Deleter>& rhs) noexcept;
 
@@ -116,24 +126,6 @@ inline T* UniquePtr<T, Deleter>::get() const noexcept
 }
 
 template <typename T, typename Deleter>
-inline UniquePtr<T, Deleter>::operator bool() const noexcept
-{
-    return mPtr != nullptr;
-}
-
-template <typename T, typename Deleter>
-inline bool UniquePtr<T, Deleter>::operator==(std::nullptr_t) const noexcept
-{
-    return mPtr == nullptr;
-}
-
-template <typename T, typename Deleter>
-inline bool UniquePtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
-{
-    return mPtr != nullptr;
-}
-
-template <typename T, typename Deleter>
 inline T& UniquePtr<T, Deleter>::operator* () const
 {
     // Undefined behavior if mPtr is nullptr
@@ -149,6 +141,60 @@ inline T* UniquePtr<T, Deleter>::operator-> () const noexcept
 }
 
 template <typename T, typename Deleter>
+inline UniquePtr<T, Deleter>::operator bool() const noexcept
+{
+    return mPtr != nullptr;
+}
+
+template <typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator==(std::nullptr_t) const noexcept
+{
+    return mPtr == nullptr;
+}
+
+template <typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator==(const UniquePtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr == rhs.mPtr;
+}
+
+template <typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
+{
+    return mPtr != nullptr;
+}
+
+template <typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator!=(const UniquePtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr != rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator<(const UniquePtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr < rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator<=(const UniquePtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr < rhs.mPtr || mPtr == rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator>(const UniquePtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr > rhs.mPtr;
+}
+
+template<typename T, typename Deleter>
+inline bool UniquePtr<T, Deleter>::operator>=(const UniquePtr<T, Deleter>& rhs) const noexcept
+{
+    return mPtr > rhs.mPtr || mPtr == rhs.mPtr;
+}
+
+template <typename T, typename Deleter>
 void UniquePtr<T, Deleter>::swap(UniquePtr<T, Deleter>& lhs, UniquePtr<T, Deleter>& rhs) noexcept
 {
     // Self-assignment is safe here
@@ -157,6 +203,12 @@ void UniquePtr<T, Deleter>::swap(UniquePtr<T, Deleter>& lhs, UniquePtr<T, Delete
     rhs.mPtr = tmp;
 }
 
-} // mybicycles
+template <typename T, typename Deleter>
+std::ostream& operator<< (std::ostream& os, const UniquePtr<T, Deleter>& up)
+{
+    return (up ? os << up.get() : os << "nullptr");
+}
+
+} // bicycles
 
 #endif /* MY_BICYCLES_UNIQUE_PTR_H */

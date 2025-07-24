@@ -13,6 +13,8 @@ namespace mybicycles
  */
 class BicycleImpl : public Bicycle
 {
+    friend std::ostream& operator<<(std::ostream& os, const BicycleImpl& bike);
+
 public:
     BicycleImpl(std::string vendor) :
         mVendor(vendor),
@@ -104,6 +106,11 @@ protected:
     mybicycles::Tyre mFrontTyre;
     mybicycles::Tyre mRearTyre;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const BicycleImpl& bc) {
+    os << bc.mVendor << ", front tyre " << bc.mFrontTyre << ", rear tyre " << bc.mRearTyre;
+    return os;
+}
 
 } // mybicycles
 
