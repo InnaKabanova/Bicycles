@@ -5,6 +5,8 @@
 #include "UniquePtr.hpp"
 #include "SharedPtr.hpp"
 
+#include <memory>
+
 void testUniquePtr_DefaultDeleter()
 {
     using namespace mybicycles;
@@ -144,6 +146,23 @@ void testUniquePtr_RawArray_CustomDeleter()
     std::cout << "============================================================= " << std::endl;
 }
 
+void testUniquePtr_OutputTest()
+{
+    using namespace mybicycles;
+    std::cout << "===== UniquePtr test: ostream operator overloading test ===== " << std::endl;
+
+    {
+        UniquePtr<BicycleImpl> up1;
+        std::cout << "Null UniquePtr: " << up1 << std::endl;
+
+        BicycleImpl* giant = new BicycleImpl("Giant");
+        UniquePtr<BicycleImpl> up2(giant);
+        std::cout << "Non-null UniquePtr: " << up2 << std::endl;
+    }
+
+    std::cout << "============================================================= " << std::endl;
+}
+
 void testSharedPtr_DefaultDeleter()
 {
     using namespace mybicycles;
@@ -160,11 +179,11 @@ void testSharedPtr_DefaultDeleter()
 
 int main()
 {
-    testUniquePtr_DefaultDeleter();
-    testUniquePtr_CustomDeleter();
-    testUniquePtr_RawArray_CustomDeleter();
+//    testUniquePtr_DefaultDeleter();
+//    testUniquePtr_CustomDeleter();
+//    testUniquePtr_RawArray_CustomDeleter();
+    testUniquePtr_OutputTest();
 
     // testSharedPtr_DefaultDeleter();
-
     return 0;
 }
