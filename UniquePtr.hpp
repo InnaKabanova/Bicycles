@@ -16,17 +16,17 @@ public:
     UniquePtr() noexcept;
     explicit UniquePtr(T* ptr) noexcept;
 
-    UniquePtr(const UniquePtr<T, Deleter>& rhs) = delete;
-    UniquePtr<T, Deleter>& operator= (const UniquePtr<T, Deleter>& rhs) = delete;
-    UniquePtr(UniquePtr<T, Deleter>&& rhs) noexcept;
-    UniquePtr<T, Deleter>& operator= (UniquePtr<T, Deleter>&& rhs) noexcept;
+    UniquePtr(const UniquePtr& rhs) = delete;
+    UniquePtr& operator= (const UniquePtr& rhs) = delete;
+    UniquePtr(UniquePtr&& rhs) noexcept;
+    UniquePtr& operator= (UniquePtr&& rhs) noexcept;
 
     ~UniquePtr();
 
     T* release() noexcept;
     void reset(T* ptr = nullptr) noexcept;
-    void reset(UniquePtr<T, Deleter>&& rhs) noexcept;
-    void swap(UniquePtr<T, Deleter>& rhs) noexcept;
+    void reset(UniquePtr&& rhs) noexcept;
+    void swap(UniquePtr& rhs) noexcept;
 
     T* get() const noexcept;
 
@@ -36,15 +36,15 @@ public:
     explicit operator bool() const noexcept;
 
     bool operator== (std::nullptr_t) const noexcept;
-    bool operator== (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator== (const UniquePtr& rhs) const noexcept;
     bool operator!= (std::nullptr_t) const noexcept;
-    bool operator!= (const UniquePtr<T, Deleter>& rhs) const noexcept;
-    bool operator< (const UniquePtr<T, Deleter>& rhs) const noexcept;
-    bool operator<= (const UniquePtr<T, Deleter>& rhs) const noexcept;
-    bool operator> (const UniquePtr<T, Deleter>& rhs) const noexcept;
-    bool operator>= (const UniquePtr<T, Deleter>& rhs) const noexcept;
+    bool operator!= (const UniquePtr& rhs) const noexcept;
+    bool operator< (const UniquePtr& rhs) const noexcept;
+    bool operator<= (const UniquePtr& rhs) const noexcept;
+    bool operator> (const UniquePtr& rhs) const noexcept;
+    bool operator>= (const UniquePtr& rhs) const noexcept;
 
-    static void swap(UniquePtr<T, Deleter>& lhs, UniquePtr<T, Deleter>& rhs) noexcept;
+    static void swap(UniquePtr& lhs, UniquePtr& rhs) noexcept;
 
 private:
     T* mPtr;

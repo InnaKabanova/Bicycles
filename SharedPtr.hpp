@@ -16,15 +16,15 @@ public:
     SharedPtr() noexcept;
     explicit SharedPtr(T* raw) noexcept;
 
-    SharedPtr(const SharedPtr<T, Deleter>& rhs) noexcept;
-    SharedPtr& operator= (const SharedPtr<T, Deleter>& rhs) noexcept;
-    SharedPtr(SharedPtr<T, Deleter>&& rhs) noexcept;
-    SharedPtr& operator= (SharedPtr<T, Deleter>&& rhs) noexcept;
+    SharedPtr(const SharedPtr& rhs) noexcept;
+    SharedPtr& operator= (const SharedPtr& rhs) noexcept;
+    SharedPtr(SharedPtr&& rhs) noexcept;
+    SharedPtr& operator= (SharedPtr&& rhs) noexcept;
 
     ~SharedPtr();
 
     void reset(T* rhs = nullptr) noexcept;
-    void swap(SharedPtr<T, Deleter>& rhs) noexcept;
+    void swap(SharedPtr& rhs) noexcept;
 
     T* get() const noexcept;
 
@@ -36,16 +36,16 @@ public:
     bool operator== (std::nullptr_t) const noexcept;
     bool operator== (const SharedPtr& rhs) const noexcept;
     bool operator!= (std::nullptr_t) const noexcept;
-    bool operator!= (const SharedPtr<T, Deleter>& rhs) const noexcept;
-    bool operator< (const SharedPtr<T, Deleter>& rhs) const noexcept;
-    bool operator<= (const SharedPtr<T, Deleter>& rhs) const noexcept;
-    bool operator> (const SharedPtr<T, Deleter>& rhs) const noexcept;
-    bool operator>= (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator!= (const SharedPtr& rhs) const noexcept;
+    bool operator< (const SharedPtr& rhs) const noexcept;
+    bool operator<= (const SharedPtr& rhs) const noexcept;
+    bool operator> (const SharedPtr& rhs) const noexcept;
+    bool operator>= (const SharedPtr& rhs) const noexcept;
 
     unsigned useCount() const noexcept;
     bool isUnique() const noexcept;
 
-    static void swap(SharedPtr<T, Deleter>& lhs, SharedPtr<T, Deleter>& rhs);
+    static void swap(SharedPtr& lhs, SharedPtr& rhs);
 
 private:
     T* mPtr;
