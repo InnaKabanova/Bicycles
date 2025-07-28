@@ -163,6 +163,22 @@ void testUniquePtr_OutputTest()
     std::cout << "============================================================= " << std::endl;
 }
 
+void testUniquePtr_MakeUnique()
+{
+    using namespace mybicycles;
+    std::cout << "================= UniquePtr test: makeUnique ================= " << std::endl;
+
+    {
+        // UniquePtr<BicycleImpl> up1 = makeUnique("Colnago", 59, 59);
+
+        UniquePtr<BicycleImpl> up1 = makeUnique<BicycleImpl>("Colnago", 59, 59);
+
+        std::cout << "Made a bicycle: " << *up1 << std::endl;
+    }
+
+    std::cout << "============================================================= " << std::endl;
+}
+
 void testSharedPtr_DefaultDeleter()
 {
     using namespace mybicycles;
@@ -182,7 +198,8 @@ int main()
 //    testUniquePtr_DefaultDeleter();
 //    testUniquePtr_CustomDeleter();
 //    testUniquePtr_RawArray_CustomDeleter();
-    testUniquePtr_OutputTest();
+//    testUniquePtr_OutputTest();
+    testUniquePtr_MakeUnique();
 
     // testSharedPtr_DefaultDeleter();
     return 0;

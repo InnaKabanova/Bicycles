@@ -209,6 +209,12 @@ std::ostream& operator<< (std::ostream& os, const UniquePtr<T, Deleter>& up)
     return (up ? os << up.get() : os << "nullptr");
 }
 
+template <typename T, typename... Args>
+UniquePtr<T> makeUnique(Args&&... args)
+{
+    return UniquePtr<T>(new T(std::forward<Args>(args)...));
+}
+
 } // bicycles
 
 #endif /* MY_BICYCLES_UNIQUE_PTR_H */

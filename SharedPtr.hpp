@@ -34,7 +34,7 @@ public:
     explicit operator bool() const noexcept;
 
     bool operator== (std::nullptr_t) const noexcept;
-    bool operator== (const SharedPtr<T, Deleter>& rhs) const noexcept;
+    bool operator== (const SharedPtr& rhs) const noexcept;
     bool operator!= (std::nullptr_t) const noexcept;
     bool operator!= (const SharedPtr<T, Deleter>& rhs) const noexcept;
     bool operator< (const SharedPtr<T, Deleter>& rhs) const noexcept;
