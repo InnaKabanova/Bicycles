@@ -9,6 +9,9 @@
 namespace mybicycles
 {
 
+/**
+ * Smart pointer with semantics of exclusive ownership over the held resource.
+ */
 template <typename T, typename Deleter = DefaultDeleter<T>>
 class UniquePtr
 {

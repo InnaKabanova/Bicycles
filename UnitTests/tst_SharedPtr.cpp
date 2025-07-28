@@ -55,31 +55,42 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_CopyAssignment)
 {
     MockBicycle* mb1 = new MockBicycle("Trek");
     MockBicycle* mb2 = new MockBicycle("Colnago");
+    MockBicycle* mb3 = new MockBicycle("Civia");
     EXPECT_CALL(*mb1, die());
     EXPECT_CALL(*mb2, die());
+    EXPECT_CALL(*mb3, die());
     {
+        // Check self-assignment:
         SharedPtr<MockBicycle> sp1(mb1);
-        sp1 = sp1; // check self-assignment
+        sp1 = sp1;
         EXPECT_EQ(sp1.get(), mb1);
         EXPECT_EQ(sp1.isUnique(), true);
         EXPECT_EQ(sp1.useCount(), 1);
 
-        SharedPtr<MockBicycle> sp2;
-        EXPECT_EQ(sp2.get(), nullptr);
-        EXPECT_EQ(sp2.isUnique(), true);
-        EXPECT_EQ(sp2.useCount(), 0);
+        // Check assignment of empty rhs:
+        SharedPtr<MockBicycle> empty;
+        EXPECT_EQ(empty.get(), nullptr);
+        EXPECT_EQ(empty.isUnique(), true);
+        EXPECT_EQ(empty.useCount(), 0);
+        sp1 = empty;
+        EXPECT_EQ(sp1.get(), nullptr);
+        EXPECT_EQ(sp1.isUnique(), true);
+        EXPECT_EQ(sp1.useCount(), 0);
 
-        sp2 = sp1;
-        EXPECT_EQ(sp2.get(), mb1);
-        EXPECT_EQ(sp2.isUnique(), false);
-        EXPECT_EQ(sp2.useCount(), 2);
+        // Check assignment of non-empty rhs to empty sp:
+        SharedPtr<MockBicycle> sp2(mb2);
+        sp1 = sp2;
+        EXPECT_EQ(sp1.get(), mb2);
+        EXPECT_EQ(sp1.isUnique(), false);
+        EXPECT_EQ(sp1.useCount(), 2);
 
-        SharedPtr<MockBicycle> sp3(mb2);
+        // Check assignment of non-empty rhs to non-empty sp:
+        SharedPtr<MockBicycle> sp3(mb3);
         sp2 = sp3;
-        EXPECT_EQ(sp2.get(), mb2);
+        EXPECT_EQ(sp2.get(), mb3);
         EXPECT_EQ(sp2.isUnique(), false);
         EXPECT_EQ(sp2.useCount(), 2);
-        EXPECT_EQ(sp1.get(), mb1);
+        EXPECT_EQ(sp1.get(), mb2);
         EXPECT_EQ(sp1.isUnique(), true);
         EXPECT_EQ(sp1.useCount(), 1);
     }
@@ -107,7 +118,7 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_MoveConstruction)
 
 TEST(BicyclesSharedPtrTestSuite, SharedPtr_MoveAssignment)
 {
-    MockBicycle* mb = new MockBicycle("Bianchi");
+    MockBicycle* mb = new MockBicycle("Niner Bikes");
     EXPECT_CALL(*mb, die());
     {
         SharedPtr<MockBicycle> sp1(mb);
@@ -115,14 +126,19 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_MoveAssignment)
         EXPECT_EQ(sp1.isUnique(), true);
         EXPECT_EQ(sp1.useCount(), 1);
 
-        SharedPtr<MockBicycle> sp2;
-        sp2 = std::move(sp1);
+        SharedPtr<MockBicycle> sp2(sp1);
+        EXPECT_EQ(sp2.get(), mb);
+        EXPECT_EQ(sp2.isUnique(), false);
+        EXPECT_EQ(sp2.useCount(), 2);
+
+        SharedPtr<MockBicycle> sp3;
+        sp3 = std::move(sp1);
         EXPECT_EQ(sp1.get(), nullptr);
         EXPECT_EQ(sp1.isUnique(), true);
         EXPECT_EQ(sp1.useCount(), 0);
-        EXPECT_EQ(sp2.get(), mb);
-        EXPECT_EQ(sp2.isUnique(), true);
-        EXPECT_EQ(sp2.useCount(), 1);
+        EXPECT_EQ(sp3.get(), mb);
+        EXPECT_EQ(sp3.isUnique(), false);
+        EXPECT_EQ(sp3.useCount(), 2);
     }
 }
 
@@ -130,22 +146,33 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_Reset)
 {
     MockBicycle* mb1 = new MockBicycle("Merida");
     MockBicycle* mb2 = new MockBicycle("Diamondback");
-    MockBicycle* mb3 = new MockBicycle("Norco");
     EXPECT_CALL(*mb1, die());
     EXPECT_CALL(*mb2, die());
-    EXPECT_CALL(*mb3, die());
     {
-        SharedPtr<MockBicycle> sp1(mb1);
-        sp1.reset();
-        EXPECT_EQ(sp1.get(), nullptr);
-        EXPECT_EQ(sp1.isUnique(), true);
-        EXPECT_EQ(sp1.useCount(), 0);
+        // Reset empty sp:
+        SharedPtr<MockBicycle> sp;
+        sp.reset();
+        EXPECT_EQ(sp.get(), nullptr);
+        EXPECT_EQ(sp.isUnique(), true);
+        EXPECT_EQ(sp.useCount(), 0);
 
-        SharedPtr<MockBicycle> sp2(mb2);
-        sp2.reset(mb3);
-        EXPECT_EQ(sp2.get(), mb3);
-        EXPECT_EQ(sp2.isUnique(), true);
-        EXPECT_EQ(sp2.useCount(), 1);
+        // Reset empty sp with non-null ptr:
+        sp.reset(mb1);
+        EXPECT_EQ(sp.get(), mb1);
+        EXPECT_EQ(sp.isUnique(), true);
+        EXPECT_EQ(sp.useCount(), 1);
+
+        // Reset non-empty sp with another non-null ptr:
+        sp.reset(mb2);
+        EXPECT_EQ(sp.get(), mb2);
+        EXPECT_EQ(sp.isUnique(), true);
+        EXPECT_EQ(sp.useCount(), 1);
+
+        // Reset non-empty sp:
+        sp.reset();
+        EXPECT_EQ(sp.get(), nullptr);
+        EXPECT_EQ(sp.isUnique(), true);
+        EXPECT_EQ(sp.useCount(), 0);
     }
 }
 
@@ -238,4 +265,172 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_OtherComparisons)
     EXPECT_TRUE(sp2 >= sp2);
     EXPECT_FALSE(sp1 >= sp2);
     EXPECT_TRUE(sp2 >= sp3);
+}
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_Construction_Destruction_UseCount)
+{
+    MockBicycle* mb = new MockBicycle("Dahon");
+    EXPECT_CALL(*mb, die());
+
+    WeakPtr<MockBicycle> wp1;
+    EXPECT_EQ(wp1.useCount(), 0);
+    EXPECT_TRUE(wp1.isUnique());
+    EXPECT_TRUE(wp1.isExpired());
+
+    {
+        SharedPtr<MockBicycle> sp1(mb);
+        WeakPtr<MockBicycle> wp2(sp1);
+        EXPECT_EQ(wp2.useCount(), 1);
+        EXPECT_TRUE(wp2.isUnique());
+        EXPECT_FALSE(wp2.isExpired());
+
+        SharedPtr<MockBicycle> sp2 = sp1;
+        EXPECT_EQ(wp2.useCount(), 2);
+        EXPECT_FALSE(wp2.isUnique());
+        EXPECT_FALSE(wp2.isExpired());
+
+        sp1.reset();
+        sp2.reset();
+        EXPECT_TRUE(wp2.isExpired());
+    }
+}
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_CopyConstrution_Lock)
+{
+    MockBicycle* mb = new MockBicycle("All-City");
+    EXPECT_CALL(*mb, die());
+
+    {
+        SharedPtr<MockBicycle> sp1(mb);
+        WeakPtr<MockBicycle> wp1(sp1);
+        EXPECT_EQ(wp1.useCount(), 1);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+
+        SharedPtr<MockBicycle> sp2 = wp1.lock();
+        WeakPtr<MockBicycle> wp2(wp1);
+        SharedPtr<MockBicycle> sp3 = wp2.lock();
+        EXPECT_EQ(sp1.get(), sp2.get());
+        EXPECT_EQ(sp1.get(), sp3.get());
+        EXPECT_EQ(wp1.useCount(), 3);
+        EXPECT_FALSE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+
+        sp1.reset();
+        sp2.reset();
+        sp3.reset();
+        EXPECT_EQ(wp1.useCount(), 0);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_TRUE(wp1.isExpired());
+        EXPECT_EQ(wp2.useCount(), 0);
+        EXPECT_TRUE(wp2.isUnique());
+        EXPECT_TRUE(wp2.isExpired());
+    }
+}
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_CopyAssignment_Lock)
+{
+    MockBicycle* mb1 = new MockBicycle("Breezer");
+    MockBicycle* mb2 = new MockBicycle("Trek’s Electra");
+    EXPECT_CALL(*mb1, die());
+    EXPECT_CALL(*mb2, die());
+
+    {
+        SharedPtr<MockBicycle> sp1(mb1);
+        WeakPtr<MockBicycle> wp1(sp1);
+        EXPECT_EQ(wp1.useCount(), 1);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+
+        SharedPtr<MockBicycle> sp2 = wp1.lock();
+        EXPECT_EQ(sp2.get(), mb1);
+        EXPECT_EQ(wp1.useCount(), 2);
+        EXPECT_FALSE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+
+        SharedPtr<MockBicycle> sp3(mb2);
+        WeakPtr<MockBicycle> wp2(sp3);
+        wp1 = wp2;
+        EXPECT_EQ(wp1.useCount(), 1);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+        SharedPtr<MockBicycle> sp4 = wp1.lock();
+        EXPECT_EQ(sp4.get(), mb2);
+    }
+}
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_MoveConstrution)
+{
+    MockBicycle* mb = new MockBicycle("Salsa Cycles");
+    EXPECT_CALL(*mb, die());
+
+    {
+        SharedPtr<MockBicycle> sp(mb);
+        WeakPtr<MockBicycle> wp1(sp);
+        EXPECT_EQ(wp1.useCount(), 1);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+
+        WeakPtr<MockBicycle> wp2(std::move(wp1));
+        EXPECT_EQ(wp1.useCount(), 0);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_TRUE(wp1.isExpired());
+        EXPECT_EQ(wp2.useCount(), 1);
+        EXPECT_TRUE(wp2.isUnique());
+        EXPECT_FALSE(wp2.isExpired());
+    }
+}
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_MoveAssignment)
+{
+    MockBicycle* mb1 = new MockBicycle("Surly");
+    MockBicycle* mb2 = new MockBicycle("Marin Bikes");
+    EXPECT_CALL(*mb1, die());
+    EXPECT_CALL(*mb2, die());
+
+    {
+        SharedPtr<MockBicycle> sp1(mb1);
+        WeakPtr<MockBicycle> wp1(sp1);
+        EXPECT_EQ(wp1.useCount(), 1);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+
+        SharedPtr<MockBicycle> sp2(mb2);
+        WeakPtr<MockBicycle> wp2(sp2);
+        wp2 = std::move(wp1);
+        EXPECT_EQ(wp1.useCount(), 0);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_TRUE(wp1.isExpired());
+        EXPECT_EQ(wp2.useCount(), 1);
+        EXPECT_TRUE(wp2.isUnique());
+        EXPECT_FALSE(wp2.isExpired());
+    }
+}
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_Reset_Expired)
+{
+    MockBicycle* mb = new MockBicycle("Felt Bicycles");
+    EXPECT_CALL(*mb, die());
+
+    WeakPtr<MockBicycle> wp1;
+    WeakPtr<MockBicycle> wp2;
+    {
+        SharedPtr<MockBicycle> sp(mb);
+        WeakPtr<MockBicycle> wp3(sp);
+
+        wp1 = wp3;
+        EXPECT_EQ(wp1.useCount(), 1);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_FALSE(wp1.isExpired());
+        wp1.reset();
+        EXPECT_EQ(wp1.useCount(), 0);
+        EXPECT_TRUE(wp1.isUnique());
+        EXPECT_TRUE(wp1.isExpired());
+
+        wp2 = wp3;
+    }
+
+    EXPECT_EQ(wp2.useCount(), 0);
+    EXPECT_TRUE(wp2.isUnique());
+    EXPECT_TRUE(wp2.isExpired());
 }

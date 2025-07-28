@@ -7,16 +7,21 @@
 
 #include <memory>
 
+using namespace mybicycles;
+
+namespace
+{
+    const bool BICYCLE_DEBUG_PRINTS = true;
+}
+
 void testUniquePtr_DefaultDeleter()
 {
-    using namespace mybicycles;
     std::cout << "============== UniquePtr test: default deleter ============== " << std::endl;
-
     {
         // Ctors, dtors
-        BicycleImpl* giant = new BicycleImpl("Giant");
+        BicycleImpl* giant = new BicycleImpl("Giant", BICYCLE_DEBUG_PRINTS);
         UniquePtr<BicycleImpl> up1(giant);
-        UniquePtr<BicycleImpl> up2(new BicycleImpl("Cannondale"));
+        UniquePtr<BicycleImpl> up2(new BicycleImpl("Cannondale", BICYCLE_DEBUG_PRINTS));
 
         // Move assignment
         // up1 = up2; // won't compile
@@ -31,11 +36,11 @@ void testUniquePtr_DefaultDeleter()
         // Check resetting nullptr with nullptr:
         up3.reset();
         // Check resetting nullptr with raw pointer:
-        up3.reset(new BicycleImpl("Bianchi"));
+        up3.reset(new BicycleImpl("Bianchi", BICYCLE_DEBUG_PRINTS));
         // Check resetting with rvalue ref:
-        up3.reset(std::move(UniquePtr<BicycleImpl>(new BicycleImpl("Fuji Bikes"))));
+        up3.reset(std::move(UniquePtr<BicycleImpl>(new BicycleImpl("Fuji Bikes", BICYCLE_DEBUG_PRINTS))));
 
-        UniquePtr<BicycleImpl> up4(new BicycleImpl("Santa Cruz"));
+        UniquePtr<BicycleImpl> up4(new BicycleImpl("Santa Cruz", BICYCLE_DEBUG_PRINTS));
         std::cout << "up3 says: "; up3->ringBell();
         std::cout << "up4 says: "; up4->ringBell();
         up3.swap(up4);
@@ -61,15 +66,11 @@ void testUniquePtr_DefaultDeleter()
             std::cout << "never here! up4 is not null" << std::endl;
         }
     }
-
     std::cout << "============================================================= " << std::endl;
 }
 
 void testUniquePtr_CustomDeleter()
 {
-    using namespace mybicycles;
-    std::cout << "============== UniquePtr test: custom deleter ============== " << std::endl;
-
     struct BoxOfThings
     {
         ~BoxOfThings() { std::cout << __PRETTY_FUNCTION__ << std::endl; }
@@ -80,6 +81,7 @@ void testUniquePtr_CustomDeleter()
         long thingThree;
     };
 
+    std::cout << "============== UniquePtr test: custom deleter ============== " << std::endl;
     {
         {
             BoxOfThings* box1 = (BoxOfThings*)malloc(sizeof(BoxOfThings));
@@ -105,18 +107,16 @@ void testUniquePtr_CustomDeleter()
         // up3 says: BoxOfMatches
         // I am a custom deleter
     }
-
     std::cout << "============================================================= " << std::endl;
 }
 
 void testUniquePtr_RawArray_CustomDeleter()
 {
-    using namespace mybicycles;
-
     std::cout << "======= UniquePtr test: custom deleter with raw arrays ====== " << std::endl;
-
     {
-        BicycleImpl* bicycles = new BicycleImpl[3]{{"Raleigh"}, {"Scott"}, {"Trek"}};
+        BicycleImpl* bicycles = new BicycleImpl[3]{{"Raleigh", BICYCLE_DEBUG_PRINTS},
+                                                   {"Scott", BICYCLE_DEBUG_PRINTS},
+                                                   {"Trek", BICYCLE_DEBUG_PRINTS}};
         UniquePtr<BicycleImpl, ArrayDeleter<BicycleImpl>> up1(bicycles);
 
         // OUTPUT:
@@ -148,41 +148,30 @@ void testUniquePtr_RawArray_CustomDeleter()
 
 void testUniquePtr_OutputTest()
 {
-    using namespace mybicycles;
     std::cout << "===== UniquePtr test: ostream operator overloading test ===== " << std::endl;
-
     {
         UniquePtr<BicycleImpl> up1;
         std::cout << "Null UniquePtr: " << up1 << std::endl;
 
-        BicycleImpl* giant = new BicycleImpl("Giant");
+        BicycleImpl* giant = new BicycleImpl("Giant", BICYCLE_DEBUG_PRINTS);
         UniquePtr<BicycleImpl> up2(giant);
         std::cout << "Non-null UniquePtr: " << up2 << std::endl;
     }
-
     std::cout << "============================================================= " << std::endl;
 }
 
 void testUniquePtr_MakeUnique()
 {
-    using namespace mybicycles;
     std::cout << "================= UniquePtr test: makeUnique ================= " << std::endl;
-
     {
-        // UniquePtr<BicycleImpl> up1 = makeUnique("Colnago", 59, 59);
-
         UniquePtr<BicycleImpl> up1 = makeUnique<BicycleImpl>("Colnago", 59, 59);
-
         std::cout << "Made a bicycle: " << *up1 << std::endl;
     }
-
     std::cout << "============================================================= " << std::endl;
 }
 
 void testSharedPtr_DefaultDeleter()
 {
-    using namespace mybicycles;
-
     SharedPtr<BicycleImpl> sp1(new BicycleImpl("Giant"));
     SharedPtr<BicycleImpl> sp2(sp1);
     SharedPtr<BicycleImpl> sp3;
