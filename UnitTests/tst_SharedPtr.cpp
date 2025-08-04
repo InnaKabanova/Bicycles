@@ -417,3 +417,31 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_Reset_Expired)
     EXPECT_EQ(wp2.useCount(), 0);
     EXPECT_TRUE(wp2.isExpired());
 }
+
+TEST(BicyclesSharedPtrTestSuite, WeakPtr_Swap)
+{
+    MockBicycle* mb1 = new MockBicycle("Masi Bikes");
+    MockBicycle* mb2 = new MockBicycle("Fargo");
+    EXPECT_CALL(*mb1, die());
+    EXPECT_CALL(*mb2, die());
+
+    WeakPtr<MockBicycle> wp1;
+    WeakPtr<MockBicycle> wp2;
+    {
+        SharedPtr<MockBicycle> sp1(mb1);
+        SharedPtr<MockBicycle> sp2(mb2);
+        wp1 = sp1;
+        wp2 = sp2;
+
+        WeakPtr<MockBicycle>::swap(wp1, wp2);
+        EXPECT_EQ(wp1.lock().get(), sp2.get());
+        EXPECT_FALSE(wp1.isExpired());
+        EXPECT_EQ(wp2.lock().get(), sp1.get());
+        EXPECT_FALSE(wp2.isExpired());
+    }
+
+    EXPECT_EQ(wp1.lock(), nullptr);
+    EXPECT_TRUE(wp1.isExpired());
+    EXPECT_EQ(wp2.lock(), nullptr);
+    EXPECT_TRUE(wp2.isExpired());
+}
