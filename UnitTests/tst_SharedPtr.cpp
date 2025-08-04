@@ -267,6 +267,8 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_OtherComparisons)
     EXPECT_TRUE(sp2 >= sp3);
 }
 
+//--------------------------------------------------------------------------------------------------
+
 TEST(BicyclesSharedPtrTestSuite, WeakPtr_Construction_Destruction_UseCount)
 {
     MockBicycle* mb = new MockBicycle("Dahon");
@@ -274,19 +276,16 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_Construction_Destruction_UseCount)
 
     WeakPtr<MockBicycle> wp1;
     EXPECT_EQ(wp1.useCount(), 0);
-    EXPECT_TRUE(wp1.isUnique());
     EXPECT_TRUE(wp1.isExpired());
 
     {
         SharedPtr<MockBicycle> sp1(mb);
         WeakPtr<MockBicycle> wp2(sp1);
         EXPECT_EQ(wp2.useCount(), 1);
-        EXPECT_TRUE(wp2.isUnique());
         EXPECT_FALSE(wp2.isExpired());
 
         SharedPtr<MockBicycle> sp2 = sp1;
         EXPECT_EQ(wp2.useCount(), 2);
-        EXPECT_FALSE(wp2.isUnique());
         EXPECT_FALSE(wp2.isExpired());
 
         sp1.reset();
@@ -304,7 +303,6 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_CopyConstrution_Lock)
         SharedPtr<MockBicycle> sp1(mb);
         WeakPtr<MockBicycle> wp1(sp1);
         EXPECT_EQ(wp1.useCount(), 1);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
 
         SharedPtr<MockBicycle> sp2 = wp1.lock();
@@ -313,17 +311,14 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_CopyConstrution_Lock)
         EXPECT_EQ(sp1.get(), sp2.get());
         EXPECT_EQ(sp1.get(), sp3.get());
         EXPECT_EQ(wp1.useCount(), 3);
-        EXPECT_FALSE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
 
         sp1.reset();
         sp2.reset();
         sp3.reset();
         EXPECT_EQ(wp1.useCount(), 0);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_TRUE(wp1.isExpired());
         EXPECT_EQ(wp2.useCount(), 0);
-        EXPECT_TRUE(wp2.isUnique());
         EXPECT_TRUE(wp2.isExpired());
     }
 }
@@ -339,20 +334,17 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_CopyAssignment_Lock)
         SharedPtr<MockBicycle> sp1(mb1);
         WeakPtr<MockBicycle> wp1(sp1);
         EXPECT_EQ(wp1.useCount(), 1);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
 
         SharedPtr<MockBicycle> sp2 = wp1.lock();
         EXPECT_EQ(sp2.get(), mb1);
         EXPECT_EQ(wp1.useCount(), 2);
-        EXPECT_FALSE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
 
         SharedPtr<MockBicycle> sp3(mb2);
         WeakPtr<MockBicycle> wp2(sp3);
         wp1 = wp2;
         EXPECT_EQ(wp1.useCount(), 1);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
         SharedPtr<MockBicycle> sp4 = wp1.lock();
         EXPECT_EQ(sp4.get(), mb2);
@@ -368,15 +360,12 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_MoveConstrution)
         SharedPtr<MockBicycle> sp(mb);
         WeakPtr<MockBicycle> wp1(sp);
         EXPECT_EQ(wp1.useCount(), 1);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
 
         WeakPtr<MockBicycle> wp2(std::move(wp1));
         EXPECT_EQ(wp1.useCount(), 0);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_TRUE(wp1.isExpired());
         EXPECT_EQ(wp2.useCount(), 1);
-        EXPECT_TRUE(wp2.isUnique());
         EXPECT_FALSE(wp2.isExpired());
     }
 }
@@ -392,17 +381,14 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_MoveAssignment)
         SharedPtr<MockBicycle> sp1(mb1);
         WeakPtr<MockBicycle> wp1(sp1);
         EXPECT_EQ(wp1.useCount(), 1);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
 
         SharedPtr<MockBicycle> sp2(mb2);
         WeakPtr<MockBicycle> wp2(sp2);
         wp2 = std::move(wp1);
         EXPECT_EQ(wp1.useCount(), 0);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_TRUE(wp1.isExpired());
         EXPECT_EQ(wp2.useCount(), 1);
-        EXPECT_TRUE(wp2.isUnique());
         EXPECT_FALSE(wp2.isExpired());
     }
 }
@@ -420,17 +406,14 @@ TEST(BicyclesSharedPtrTestSuite, WeakPtr_Reset_Expired)
 
         wp1 = wp3;
         EXPECT_EQ(wp1.useCount(), 1);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_FALSE(wp1.isExpired());
         wp1.reset();
         EXPECT_EQ(wp1.useCount(), 0);
-        EXPECT_TRUE(wp1.isUnique());
         EXPECT_TRUE(wp1.isExpired());
 
         wp2 = wp3;
     }
 
     EXPECT_EQ(wp2.useCount(), 0);
-    EXPECT_TRUE(wp2.isUnique());
     EXPECT_TRUE(wp2.isExpired());
 }

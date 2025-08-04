@@ -1,5 +1,4 @@
-#ifndef MY_BICYCLES_DELETER_H
-#define MY_BICYCLES_DELETER_H
+#pragma once
 
 #include <iostream>
 
@@ -32,17 +31,13 @@ class CDeleter
 public:
     static void deletePtr(T* ptr) noexcept
     {
-        // Debug prints
-        std::cout << "I am a custom deleter" << std::endl;
-        if (ptr == nullptr)
-        {
-            std::cout << "Submitted resource is already null" << std::endl;
-        }
-
+//        std::cout << "I am a custom deleter" << std::endl;
+//        if (ptr == nullptr)
+//        {
+//            std::cout << "Submitted resource is already null" << std::endl;
+//        }
         free(ptr);
     }
 };
 
 } /* mybicycles */
-
-#endif /* MY_BICYCLES_DELETER_H */

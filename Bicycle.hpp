@@ -1,5 +1,4 @@
-#ifndef BICYCLE_HPP
-#define BICYCLE_HPP
+#pragma once
 
 #include <cstdint>
 #include <sstream>
@@ -33,5 +32,3 @@ public:
 };
 
 } // mybicycles
-
-#endif // BICYCLE_HPP

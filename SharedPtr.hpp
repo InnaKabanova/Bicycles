@@ -1,5 +1,4 @@
-#ifndef MY_BICYCLES_SHARED_PTR
-#define MY_BICYCLES_SHARED_PTR
+#pragma once
 
 #include "Deleter.hpp"
 
@@ -80,6 +79,8 @@ public:
     static void swap(SharedPtr& lhs, SharedPtr& rhs);
 
 private:
+    void incrStrongUseCount() noexcept;
+
     ControlBlock<T>* mCb;
 };
 
@@ -104,15 +105,18 @@ public:
     void reset() noexcept;
 
     unsigned int useCount() const noexcept;
-    bool isUnique() const noexcept;
     bool isExpired() const noexcept;
     SharedPtr<T> lock() noexcept;
 
     static void swap(WeakPtr& lhs, WeakPtr& rhs);
 
 private:
+    void incrWeakUseCount() noexcept;
+
     ControlBlock<T>* mCb;
 };
+
+//--------------------------------------------------------------------------------------------------
 
 template<typename T, typename Deleter>
 inline SharedPtr<T, Deleter>::SharedPtr() noexcept :
@@ -133,13 +137,19 @@ inline SharedPtr<T, Deleter>::~SharedPtr()
 }
 
 template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::SharedPtr(const SharedPtr<T, Deleter>& rhs) noexcept :
-    mCb(rhs.mCb)
+inline void SharedPtr<T, Deleter>::incrStrongUseCount() noexcept
 {
     if (mCb)
     {
         mCb->mStrongUseCount++;
     }
+}
+
+template<typename T, typename Deleter>
+inline SharedPtr<T, Deleter>::SharedPtr(const SharedPtr<T, Deleter>& rhs) noexcept :
+    mCb(rhs.mCb)
+{
+    incrStrongUseCount();
 }
 
 template<typename T, typename Deleter>
@@ -154,10 +164,7 @@ inline SharedPtr<T, Deleter>& SharedPtr<T, Deleter>::operator=(const SharedPtr<T
         }
 
         mCb = rhs.mCb;
-        if (mCb)
-        {
-            mCb->mStrongUseCount++;
-        }
+        incrStrongUseCount();
     }
     return *this;
 }
@@ -380,6 +387,8 @@ std::ostream& operator<< (std::ostream& os, const SharedPtr<T, Deleter>& sp)
     return (sp ? os << sp.get() : os << "nullptr");
 }
 
+//--------------------------------------------------------------------------------------------------
+
 template<typename T, typename Deleter>
 inline WeakPtr<T, Deleter>::WeakPtr() noexcept :
     mCb(nullptr)
@@ -387,8 +396,7 @@ inline WeakPtr<T, Deleter>::WeakPtr() noexcept :
 }
 
 template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>::WeakPtr(const SharedPtr<T, Deleter>& sp) noexcept :
-    mCb(sp.mCb)
+inline void WeakPtr<T, Deleter>::incrWeakUseCount() noexcept
 {
     if (mCb)
     {
@@ -396,14 +404,19 @@ inline WeakPtr<T, Deleter>::WeakPtr(const SharedPtr<T, Deleter>& sp) noexcept :
     }
 }
 
+
+template<typename T, typename Deleter>
+inline WeakPtr<T, Deleter>::WeakPtr(const SharedPtr<T, Deleter>& sp) noexcept :
+    mCb(sp.mCb)
+{
+    incrWeakUseCount();
+}
+
 template<typename T, typename Deleter>
 inline WeakPtr<T, Deleter>::WeakPtr(const WeakPtr& rhs) noexcept :
     mCb(rhs.mCb)
 {
-    if (mCb)
-    {
-        mCb->mWeakUseCount++;
-    }
+    incrWeakUseCount();
 }
 
 template<typename T, typename Deleter>
@@ -413,10 +426,7 @@ inline WeakPtr<T, Deleter>& WeakPtr<T, Deleter>::operator=(const WeakPtr& rhs) n
     {
         reset();
         mCb = rhs.mCb;
-        if (mCb)
-        {
-            mCb->mWeakUseCount++;
-        }
+        incrWeakUseCount();
     }
     return *this;
 }
@@ -425,11 +435,7 @@ template<typename T, typename Deleter>
 inline WeakPtr<T, Deleter>::WeakPtr(WeakPtr&& rhs) noexcept :
     mCb(rhs.mCb)
 {
-    if (mCb)
-    {
-        // To avoid destruction of expired xontrol block if any:
-        mCb->mWeakUseCount++;
-    }
+    incrWeakUseCount(); // to avoid destruction of expired control block if any
     rhs.reset();
 }
 
@@ -440,11 +446,7 @@ inline WeakPtr<T, Deleter>& WeakPtr<T, Deleter>::operator=(WeakPtr&& rhs) noexce
     {
         reset();
         mCb = rhs.mCb;
-        if (mCb)
-        {
-            // To avoid destruction of expired xontrol block if any:
-            mCb->mWeakUseCount++;
-        }
+        incrWeakUseCount(); // to avoid destruction of expired control block if any
         rhs.reset();
     }
     return *this;
@@ -477,12 +479,6 @@ inline unsigned int WeakPtr<T, Deleter>::useCount() const noexcept
 }
 
 template<typename T, typename Deleter>
-inline bool WeakPtr<T, Deleter>::isUnique() const noexcept
-{
-    return (mCb == nullptr || mCb->mStrongUseCount <= 1);
-}
-
-template<typename T, typename Deleter>
 inline bool WeakPtr<T, Deleter>::isExpired() const noexcept
 {
     return (mCb == nullptr ? true : mCb->mStrongUseCount == 0);
@@ -499,7 +495,7 @@ inline SharedPtr<T> WeakPtr<T, Deleter>::lock() noexcept
     {
         SharedPtr<T, Deleter> ret;
         ret.mCb = mCb;
-        ret.mCb->mStrongUseCount++;
+        ret.incrStrongUseCount();
         return ret;
     }
 }
@@ -513,5 +509,3 @@ inline void WeakPtr<T, Deleter>::swap(WeakPtr& lhs, WeakPtr& rhs)
 }
 
 } // mybicycles
-
-#endif /* MY_BICYCLES_SHARED_PTR */

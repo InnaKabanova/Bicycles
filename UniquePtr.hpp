@@ -1,5 +1,4 @@
-#ifndef MY_BICYCLES_UNIQUE_PTR_H
-#define MY_BICYCLES_UNIQUE_PTR_H
+#pragma once
 
 #include "Deleter.hpp"
 
@@ -219,5 +218,3 @@ UniquePtr<T> makeUnique(Args&&... args)
 }
 
 } // bicycles
-
-#endif /* MY_BICYCLES_UNIQUE_PTR_H */

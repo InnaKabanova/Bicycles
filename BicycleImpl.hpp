@@ -1,5 +1,4 @@
-#ifndef BICYCLE_IMPL_HPP
-#define BICYCLE_IMPL_HPP
+#pragma once
 
 #include "Bicycle.hpp"
 
@@ -146,5 +145,3 @@ inline std::ostream& operator<<(std::ostream& os, const BicycleImpl& bc) {
 }
 
 } // mybicycles
-
-#endif // BICYCLE_IMPL_HPP

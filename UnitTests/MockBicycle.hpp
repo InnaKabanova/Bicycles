@@ -1,5 +1,4 @@
-#ifndef BICYCLE_MOCK_HPP
-#define BICYCLE_MOCK_HPP
+#pragma once
 
 #include "BicycleImpl.hpp"
 
@@ -44,5 +43,3 @@ public:
 };
 
 } // mybicycles
-
-#endif // BICYCLE_MOCK_HPP
