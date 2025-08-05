@@ -26,7 +26,8 @@ add_executable(MyBicyclesTest
     main.cpp
     MockBicycle.hpp
     tst_UniquePtr.cpp
-    tst_SharedPtr.cpp)
+    tst_SharedPtr.cpp
+    tst_WeakPtr.cpp)
 
 target_include_directories(MyBicyclesTest PRIVATE ..)
 add_test(NAME MyBicyclesTest COMMAND MyBicyclesTest)

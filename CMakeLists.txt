@@ -11,8 +11,10 @@ add_executable(MyBicycles main.cpp
     Bicycle.hpp
     BicycleImpl.hpp
     Deleter.hpp
+    Examples.hpp
 
-    BicycleImpl.cpp)
+    BicycleImpl.cpp
+    Examples.cpp)
 
 include(GNUInstallDirs)
 install(TARGETS MyBicycles
