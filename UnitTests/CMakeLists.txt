@@ -17,6 +17,8 @@ if (NOT GTEST_ROOT)
     endif()
 endif()
 
+find_package(Threads REQUIRED)
+
 find_package(GTest REQUIRED)
 if (NOT GTest_FOUND)
     message (FATAL_ERROR "No GTest Found")
@@ -32,7 +34,7 @@ add_executable(MyBicyclesTest
 target_include_directories(MyBicyclesTest PRIVATE ..)
 add_test(NAME MyBicyclesTest COMMAND MyBicyclesTest)
 
-target_link_libraries(MyBicyclesTest PRIVATE GTest::GTest gmock)
+target_link_libraries(MyBicyclesTest PRIVATE GTest::GTest gmock Threads::Threads)
 if (GMock_FOUND)
     target_link_libraries(MyBicyclesTest INTERFACE GTest::GMock)
 endif()

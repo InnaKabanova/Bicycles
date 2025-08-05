@@ -233,21 +233,13 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_Equality_NonEquality)
     EXPECT_NE(sp2, sp3);
 }
 
-template <typename T>
-class FakeDeleter
-{
-public:
-    static void deletePtr(T* ptr) noexcept
-    {
-        // Deletes nothing, haha
-    }
-};
-
 TEST(BicyclesSharedPtrTestSuite, SharedPtr_OtherComparisons)
 {
-    SharedPtr<MockBicycle, FakeDeleter<MockBicycle>> sp1(reinterpret_cast<MockBicycle*>(14));
-    SharedPtr<MockBicycle, FakeDeleter<MockBicycle>> sp2(reinterpret_cast<MockBicycle*>(17));
-    SharedPtr<MockBicycle, FakeDeleter<MockBicycle>> sp3 = sp2;
+    auto fakeDeleter = [](MockBicycle* ptr){ /* Deletes nothing, haha */ };
+
+    SharedPtr<MockBicycle> sp1(reinterpret_cast<MockBicycle*>(14), fakeDeleter);
+    SharedPtr<MockBicycle> sp2(reinterpret_cast<MockBicycle*>(17), fakeDeleter);
+    SharedPtr<MockBicycle> sp3 = sp2;
 
     EXPECT_TRUE(sp1 < sp2);
     EXPECT_FALSE(sp2 < sp1);
@@ -264,4 +256,40 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_OtherComparisons)
     EXPECT_TRUE(sp2 >= sp2);
     EXPECT_FALSE(sp1 >= sp2);
     EXPECT_TRUE(sp2 >= sp3);
+}
+
+void deleterFunc(MockBicycle* ptr)
+{
+    delete ptr;
+}
+
+struct DeleterFunctor
+{
+    void operator()(MockBicycle* ptr)
+    {
+        delete ptr;
+    }
+};
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_CustomDeleter)
+{
+    MockBicycle* mb1 = new MockBicycle("Giant’s Revolt");
+    MockBicycle* mb2 = new MockBicycle("Canyon");
+    MockBicycle* mb3 = new MockBicycle[3]{{"Ritte"}, {"Nishiki"}, {"Fargo"}};
+    EXPECT_CALL(*mb1, die());
+    EXPECT_CALL(*mb2, die());
+    EXPECT_CALL(mb3[1], die());
+    EXPECT_CALL(mb3[2], die());
+    EXPECT_CALL(mb3[0], die());
+
+    {
+        // Custom deleter as a func pointer
+        SharedPtr<MockBicycle> sp1(mb1, deleterFunc);
+
+        // Custom deleter as a functor
+        SharedPtr<MockBicycle> sp2(mb2, DeleterFunctor());
+
+        // Custom deleter as a lambda
+        SharedPtr<MockBicycle> sp3(mb3, [](MockBicycle* ptr){delete[] ptr;});
+    }
 }

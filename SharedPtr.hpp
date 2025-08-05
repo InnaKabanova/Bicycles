@@ -1,29 +1,31 @@
 #pragma once
 
-#include "Deleter.hpp"
-
-#include <sstream>
-#include <utility>
+#include <functional>
+#include <iostream>
 
 namespace mybicycles
 {
 
-template <typename T, typename Deleter>
+template <typename T>
 class WeakPtr;
 
 template <typename T>
 struct ControlBlock
 {
+    static const std::function<void(T*)> DEFAULT_DELETER;
+
     ControlBlock() :
         mPtr(nullptr),
         mStrongUseCount(0),
-        mWeakUseCount(0)
+        mWeakUseCount(0),
+        mDeleter(DEFAULT_DELETER)
     {}
 
-    ControlBlock(T* raw, unsigned int useCount) :
+    ControlBlock(T* raw, unsigned int strongUseCount, std::function<void(T*)> deleter = DEFAULT_DELETER) :
         mPtr(raw),
-        mStrongUseCount(useCount),
-        mWeakUseCount(0)
+        mStrongUseCount(strongUseCount),
+        mWeakUseCount(0),
+        mDeleter(deleter)
     {}
 
     ~ControlBlock() = default;
@@ -32,20 +34,26 @@ struct ControlBlock
     T* mPtr;
     unsigned int mStrongUseCount;
     unsigned int mWeakUseCount;
+    std::function<void(T*)> mDeleter;
 };
+
+template <typename T>
+const std::function<void(T*)> ControlBlock<T>::DEFAULT_DELETER = [](T* ptr){delete ptr;};
 
 /**
  * Smart pointer with semantics of shared ownership over the held resource.
  * CAUTION: not thread-safe
  */
-template <typename T, typename Deleter = DefaultDeleter<T>>
+template <typename T>
 class SharedPtr
 {
-    friend class WeakPtr<T, Deleter>;
+    friend class WeakPtr<T>;
 
 public:
     SharedPtr() noexcept;
     explicit SharedPtr(T* raw) noexcept;
+    template<typename Deleter>
+    SharedPtr(T* raw, Deleter deleter) noexcept;
 
     SharedPtr(const SharedPtr& rhs) noexcept;
     SharedPtr& operator= (const SharedPtr& rhs) noexcept;
@@ -55,6 +63,9 @@ public:
     ~SharedPtr();
 
     void reset(T* rhs = nullptr) noexcept;
+    template<typename Deleter>
+    void reset(T* rhs, Deleter deleter) noexcept;
+
     void swap(SharedPtr& rhs) noexcept;
 
     T* get() const noexcept;
@@ -80,6 +91,7 @@ public:
 
 private:
     void incrStrongUseCount() noexcept;
+    void deleteResource() noexcept;
 
     ControlBlock<T>* mCb;
 };
@@ -88,12 +100,12 @@ private:
  * Smart pointer with non-owning ("weak") reference to its held resource.
  * CAUTION: not thread-safe
  */
-template <typename T, typename Deleter = DefaultDeleter<T>>
+template <typename T>
 class WeakPtr
 {
 public:
     WeakPtr() noexcept;
-    WeakPtr(const SharedPtr<T, Deleter>& sp) noexcept;
+    WeakPtr(const SharedPtr<T>& sp) noexcept;
 
     WeakPtr(const WeakPtr& rhs) noexcept;
     WeakPtr& operator= (const WeakPtr& rhs) noexcept;
@@ -118,26 +130,32 @@ private:
 
 //--------------------------------------------------------------------------------------------------
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::SharedPtr() noexcept :
+template<typename T>
+inline SharedPtr<T>::SharedPtr() noexcept :
     mCb(nullptr)
 {
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::SharedPtr(T* raw) noexcept :
+template<typename T>
+inline SharedPtr<T>::SharedPtr(T* raw) noexcept :
     mCb(new ControlBlock<T>(raw, 1))
 {
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::~SharedPtr()
+template<typename T>
+template<typename Deleter>
+inline SharedPtr<T>::SharedPtr(T* raw, Deleter deleter) noexcept :
+    mCb(new ControlBlock<T>(raw, 1, deleter))
+{}
+
+template<typename T>
+inline SharedPtr<T>::~SharedPtr()
 {
     reset();
 }
 
-template<typename T, typename Deleter>
-inline void SharedPtr<T, Deleter>::incrStrongUseCount() noexcept
+template<typename T>
+inline void SharedPtr<T>::incrStrongUseCount() noexcept
 {
     if (mCb)
     {
@@ -145,15 +163,34 @@ inline void SharedPtr<T, Deleter>::incrStrongUseCount() noexcept
     }
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::SharedPtr(const SharedPtr<T, Deleter>& rhs) noexcept :
+template<typename T>
+inline void SharedPtr<T>::deleteResource() noexcept
+{
+    // Free local held resource if any
+    if (mCb)
+    {
+        mCb->mStrongUseCount--;
+        if (0 == mCb->mStrongUseCount)
+        {
+            mCb->mDeleter(mCb->mPtr);
+            if (0 == mCb->mWeakUseCount)
+            {
+                delete mCb;
+            }
+        }
+        mCb = nullptr;
+    }
+}
+
+template<typename T>
+inline SharedPtr<T>::SharedPtr(const SharedPtr<T>& rhs) noexcept :
     mCb(rhs.mCb)
 {
     incrStrongUseCount();
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>& SharedPtr<T, Deleter>::operator=(const SharedPtr<T, Deleter>& rhs) noexcept
+template<typename T>
+inline SharedPtr<T>& SharedPtr<T>::operator=(const SharedPtr<T>& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -169,15 +206,15 @@ inline SharedPtr<T, Deleter>& SharedPtr<T, Deleter>::operator=(const SharedPtr<T
     return *this;
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::SharedPtr(SharedPtr<T, Deleter>&& rhs) noexcept :
+template<typename T>
+inline SharedPtr<T>::SharedPtr(SharedPtr<T>&& rhs) noexcept :
     mCb(rhs.mCb)
 {
     rhs.mCb = nullptr;
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>& SharedPtr<T, Deleter>::operator=(SharedPtr<T, Deleter>&& rhs) noexcept
+template<typename T>
+inline SharedPtr<T>& SharedPtr<T>::operator=(SharedPtr<T>&& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -192,39 +229,33 @@ inline SharedPtr<T, Deleter>& SharedPtr<T, Deleter>::operator=(SharedPtr<T, Dele
     return *this;
 }
 
-template<typename T, typename Deleter>
-inline void SharedPtr<T, Deleter>::reset(T* rhs) noexcept
+template<typename T>
+inline void SharedPtr<T>::reset(T* rhs) noexcept
 {
-    // Free local held resource if any
-    if (mCb)
-    {
-        mCb->mStrongUseCount--;
-        if (0 == mCb->mStrongUseCount)
-        {
-            Deleter::deletePtr(mCb->mPtr);
-
-            if (0 == mCb->mWeakUseCount)
-            {
-                delete mCb;
-            }
-        }
-        mCb = nullptr;
-    }
-
+    deleteResource();
     if (rhs != nullptr)
     {
         mCb = new ControlBlock<T>(rhs, 1);
     }
 }
 
-template<typename T, typename Deleter>
-inline void SharedPtr<T, Deleter>::swap(SharedPtr<T, Deleter>& rhs) noexcept
+template<typename T>
+template<typename Deleter>
+inline void SharedPtr<T>::reset(T* rhs, Deleter deleter) noexcept
 {
-    SharedPtr<T, Deleter>::swap(*this, rhs);
+    deleteResource();
+    // Not checking if rhs is null is intended here
+    mCb = new ControlBlock<T>(rhs, 1, deleter);
 }
 
-template<typename T, typename Deleter>
-inline T* SharedPtr<T, Deleter>::get() const noexcept
+template<typename T>
+inline void SharedPtr<T>::swap(SharedPtr<T>& rhs) noexcept
+{
+    SharedPtr<T>::swap(*this, rhs);
+}
+
+template<typename T>
+inline T* SharedPtr<T>::get() const noexcept
 {
     if (!mCb)
     {
@@ -234,23 +265,23 @@ inline T* SharedPtr<T, Deleter>::get() const noexcept
     return mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline T& SharedPtr<T, Deleter>::operator*() const
+template<typename T>
+inline T& SharedPtr<T>::operator*() const
 {
     // Undefined behavior if mCb or mPtr is nullptr
     // May throw if mPtr's operator* throws
     return *(mCb->mPtr);
 }
 
-template<typename T, typename Deleter>
-inline T* SharedPtr<T, Deleter>::operator-> () const noexcept
+template<typename T>
+inline T* SharedPtr<T>::operator-> () const noexcept
 {
     // Undefined behavior if mCb or mPtr is nullptr
     return mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T, Deleter>::operator bool() const noexcept
+template<typename T>
+inline SharedPtr<T>::operator bool() const noexcept
 {
     if (!mCb)
     {
@@ -260,8 +291,8 @@ inline SharedPtr<T, Deleter>::operator bool() const noexcept
     return mCb->mPtr != nullptr;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator==(std::nullptr_t) const noexcept
+template<typename T>
+inline bool SharedPtr<T>::operator==(std::nullptr_t) const noexcept
 {
     if (!mCb)
     {
@@ -271,8 +302,8 @@ inline bool SharedPtr<T, Deleter>::operator==(std::nullptr_t) const noexcept
     return mCb->mPtr == nullptr;
 }
 
-template <typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator==(const SharedPtr<T, Deleter>& rhs) const noexcept
+template <typename T>
+inline bool SharedPtr<T>::operator==(const SharedPtr<T>& rhs) const noexcept
 {
     if (!mCb)
     {
@@ -282,8 +313,8 @@ inline bool SharedPtr<T, Deleter>::operator==(const SharedPtr<T, Deleter>& rhs) 
     return mCb->mPtr == rhs.mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
+template<typename T>
+inline bool SharedPtr<T>::operator!=(std::nullptr_t) const noexcept
 {
     if (!mCb)
     {
@@ -293,8 +324,8 @@ inline bool SharedPtr<T, Deleter>::operator!=(std::nullptr_t) const noexcept
     return mCb->mPtr != nullptr;
 }
 
-template <typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator!=(const SharedPtr<T, Deleter>& rhs) const noexcept
+template <typename T>
+inline bool SharedPtr<T>::operator!=(const SharedPtr<T>& rhs) const noexcept
 {
     if (!mCb)
     {
@@ -304,8 +335,8 @@ inline bool SharedPtr<T, Deleter>::operator!=(const SharedPtr<T, Deleter>& rhs) 
     return mCb->mPtr != rhs.mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator<(const SharedPtr<T, Deleter>& rhs) const noexcept
+template<typename T>
+inline bool SharedPtr<T>::operator<(const SharedPtr<T>& rhs) const noexcept
 {
     if (!mCb)
     {
@@ -315,8 +346,8 @@ inline bool SharedPtr<T, Deleter>::operator<(const SharedPtr<T, Deleter>& rhs) c
     return mCb->mPtr < rhs.mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator<=(const SharedPtr<T, Deleter>& rhs) const noexcept
+template<typename T>
+inline bool SharedPtr<T>::operator<=(const SharedPtr<T>& rhs) const noexcept
 {
     if (!mCb)
     {
@@ -326,8 +357,8 @@ inline bool SharedPtr<T, Deleter>::operator<=(const SharedPtr<T, Deleter>& rhs) 
     return mCb->mPtr < rhs.mCb->mPtr || mCb->mPtr == rhs.mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator>(const SharedPtr<T, Deleter>& rhs) const noexcept
+template<typename T>
+inline bool SharedPtr<T>::operator>(const SharedPtr<T>& rhs) const noexcept
 {
     if (!mCb)
     {
@@ -337,8 +368,8 @@ inline bool SharedPtr<T, Deleter>::operator>(const SharedPtr<T, Deleter>& rhs) c
     return mCb->mPtr > rhs.mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::operator>=(const SharedPtr<T, Deleter>& rhs) const noexcept
+template<typename T>
+inline bool SharedPtr<T>::operator>=(const SharedPtr<T>& rhs) const noexcept
 {
     if (!mCb)
     {
@@ -348,8 +379,8 @@ inline bool SharedPtr<T, Deleter>::operator>=(const SharedPtr<T, Deleter>& rhs) 
     return mCb->mPtr > rhs.mCb->mPtr || mCb->mPtr == rhs.mCb->mPtr;
 }
 
-template<typename T, typename Deleter>
-inline unsigned int SharedPtr<T, Deleter>::useCount() const noexcept
+template<typename T>
+inline unsigned int SharedPtr<T>::useCount() const noexcept
 {
     if (!mCb)
     {
@@ -359,8 +390,8 @@ inline unsigned int SharedPtr<T, Deleter>::useCount() const noexcept
     return mCb->mStrongUseCount;
 }
 
-template<typename T, typename Deleter>
-inline bool SharedPtr<T, Deleter>::isUnique() const noexcept
+template<typename T>
+inline bool SharedPtr<T>::isUnique() const noexcept
 {
     if (!mCb)
     {
@@ -370,33 +401,33 @@ inline bool SharedPtr<T, Deleter>::isUnique() const noexcept
     return mCb->mStrongUseCount == 1;
 }
 
-template<typename T, typename Deleter>
-inline void SharedPtr<T, Deleter>::swap(SharedPtr<T, Deleter>& lhs, SharedPtr<T, Deleter>& rhs)
+template<typename T>
+inline void SharedPtr<T>::swap(SharedPtr<T>& lhs, SharedPtr<T>& rhs)
 {
     if (&lhs != &rhs)
     {
-        SharedPtr<T, Deleter> temp(lhs);
+        SharedPtr<T> temp(lhs);
         lhs = rhs;
         rhs = temp;
     }
 }
 
-template <typename T, typename Deleter>
-std::ostream& operator<< (std::ostream& os, const SharedPtr<T, Deleter>& sp)
+template <typename T>
+std::ostream& operator<< (std::ostream& os, const SharedPtr<T>& sp)
 {
     return (sp ? os << sp.get() : os << "nullptr");
 }
 
 //--------------------------------------------------------------------------------------------------
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>::WeakPtr() noexcept :
+template<typename T>
+inline WeakPtr<T>::WeakPtr() noexcept :
     mCb(nullptr)
 {
 }
 
-template<typename T, typename Deleter>
-inline void WeakPtr<T, Deleter>::incrWeakUseCount() noexcept
+template<typename T>
+inline void WeakPtr<T>::incrWeakUseCount() noexcept
 {
     if (mCb)
     {
@@ -405,22 +436,22 @@ inline void WeakPtr<T, Deleter>::incrWeakUseCount() noexcept
 }
 
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>::WeakPtr(const SharedPtr<T, Deleter>& sp) noexcept :
+template<typename T>
+inline WeakPtr<T>::WeakPtr(const SharedPtr<T>& sp) noexcept :
     mCb(sp.mCb)
 {
     incrWeakUseCount();
 }
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>::WeakPtr(const WeakPtr& rhs) noexcept :
+template<typename T>
+inline WeakPtr<T>::WeakPtr(const WeakPtr& rhs) noexcept :
     mCb(rhs.mCb)
 {
     incrWeakUseCount();
 }
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>& WeakPtr<T, Deleter>::operator=(const WeakPtr& rhs) noexcept
+template<typename T>
+inline WeakPtr<T>& WeakPtr<T>::operator=(const WeakPtr& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -431,16 +462,16 @@ inline WeakPtr<T, Deleter>& WeakPtr<T, Deleter>::operator=(const WeakPtr& rhs) n
     return *this;
 }
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>::WeakPtr(WeakPtr&& rhs) noexcept :
+template<typename T>
+inline WeakPtr<T>::WeakPtr(WeakPtr&& rhs) noexcept :
     mCb(rhs.mCb)
 {
     incrWeakUseCount(); // to avoid destruction of expired control block if any
     rhs.reset();
 }
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>& WeakPtr<T, Deleter>::operator=(WeakPtr&& rhs) noexcept
+template<typename T>
+inline WeakPtr<T>& WeakPtr<T>::operator=(WeakPtr&& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -452,14 +483,14 @@ inline WeakPtr<T, Deleter>& WeakPtr<T, Deleter>::operator=(WeakPtr&& rhs) noexce
     return *this;
 }
 
-template<typename T, typename Deleter>
-inline WeakPtr<T, Deleter>::~WeakPtr() noexcept
+template<typename T>
+inline WeakPtr<T>::~WeakPtr() noexcept
 {
     reset();
 }
 
-template<typename T, typename Deleter>
-inline void WeakPtr<T, Deleter>::reset() noexcept
+template<typename T>
+inline void WeakPtr<T>::reset() noexcept
 {
     if (mCb)
     {
@@ -472,36 +503,36 @@ inline void WeakPtr<T, Deleter>::reset() noexcept
     mCb = nullptr;
 }
 
-template<typename T, typename Deleter>
-inline unsigned int WeakPtr<T, Deleter>::useCount() const noexcept
+template<typename T>
+inline unsigned int WeakPtr<T>::useCount() const noexcept
 {
     return (mCb == nullptr ? 0 : mCb->mStrongUseCount);
 }
 
-template<typename T, typename Deleter>
-inline bool WeakPtr<T, Deleter>::isExpired() const noexcept
+template<typename T>
+inline bool WeakPtr<T>::isExpired() const noexcept
 {
     return (mCb == nullptr ? true : mCb->mStrongUseCount == 0);
 }
 
-template<typename T, typename Deleter>
-inline SharedPtr<T> WeakPtr<T, Deleter>::lock() noexcept
+template<typename T>
+inline SharedPtr<T> WeakPtr<T>::lock() noexcept
 {
     if (isExpired())
     {
-        return SharedPtr<T, Deleter>();
+        return SharedPtr<T>();
     }
     else
     {
-        SharedPtr<T, Deleter> ret;
+        SharedPtr<T> ret;
         ret.mCb = mCb;
         ret.incrStrongUseCount();
         return ret;
     }
 }
 
-template<typename T, typename Deleter>
-inline void WeakPtr<T, Deleter>::swap(WeakPtr& lhs, WeakPtr& rhs)
+template<typename T>
+inline void WeakPtr<T>::swap(WeakPtr& lhs, WeakPtr& rhs)
 {
     WeakPtr tmp = lhs;
     lhs = rhs;

@@ -1,5 +1,7 @@
 #include "Examples.hpp"
 
+#include <memory>
+
 int main()
 {
 //    testUniquePtr_DefaultDeleter();
@@ -7,7 +9,5 @@ int main()
 //    testUniquePtr_RawArray_CustomDeleter();
 //    testUniquePtr_OutputTest();
 //    testUniquePtr_MakeUnique();
-
-    testSharedPtr_DefaultDeleter();
     return 0;
 }

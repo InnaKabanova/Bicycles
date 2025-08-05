@@ -166,15 +166,3 @@ void testUniquePtr_MakeUnique()
     }
     std::cout << "============================================================= " << std::endl;
 }
-
-void testSharedPtr_DefaultDeleter()
-{
-    SharedPtr<BicycleImpl> sp1(new BicycleImpl("Giant"));
-    SharedPtr<BicycleImpl> sp2(sp1);
-    SharedPtr<BicycleImpl> sp3;
-    sp3 = std::move(sp2);
-    SharedPtr<BicycleImpl> sp4;
-    sp4 = sp1;
-
-    std::cout << "Use count: " << sp4.useCount() << std::endl;
-}
