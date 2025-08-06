@@ -175,3 +175,19 @@ TEST(BicyclesUniquePtrTestSuite, UniquePtr_OtherComparisons)
     EXPECT_TRUE(up2 >= up2);
     EXPECT_FALSE(up1 >= up2);
 }
+
+TEST(BicyclesUniquePtrTestSuite, UniquePtr_MakeUnique)
+{
+    {
+        UniquePtr<std::string> up1 = makeUnique<std::string>("TestString");
+
+        UniquePtr<MockBicycle> up2 = makeUnique<MockBicycle>("Colnago", 59, 59);
+        EXPECT_CALL(*(up2.get()), die());
+
+        // Example of managing an array of objects
+        UniquePtr<MockBicycle, ArrayDeleter<MockBicycle>> up3(new MockBicycle[3]{{"Ritte"}, {"Nishiki"}, {"Fargo"}});
+        EXPECT_CALL(up3.get()[0], die());
+        EXPECT_CALL(up3.get()[1], die());
+        EXPECT_CALL(up3.get()[2], die());
+    }
+}

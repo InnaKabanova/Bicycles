@@ -156,13 +156,3 @@ void testUniquePtr_OutputTest()
     }
     std::cout << "============================================================= " << std::endl;
 }
-
-void testUniquePtr_MakeUnique()
-{
-    std::cout << "================= UniquePtr test: makeUnique ================= " << std::endl;
-    {
-        UniquePtr<BicycleImpl> up1 = makeUnique<BicycleImpl>("Colnago", 59, 59);
-        std::cout << "Made a bicycle: " << *up1 << std::endl;
-    }
-    std::cout << "============================================================= " << std::endl;
-}

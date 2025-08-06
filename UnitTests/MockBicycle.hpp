@@ -9,6 +9,8 @@ namespace mybicycles
 class MockBicycle : public BicycleImpl
 {
 public:
+    MockBicycle() = default;
+
     MockBicycle(std::string vendor) :
         BicycleImpl(vendor)
     {}

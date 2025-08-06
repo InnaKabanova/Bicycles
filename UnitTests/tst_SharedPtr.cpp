@@ -293,3 +293,15 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_CustomDeleter)
         SharedPtr<MockBicycle> sp3(mb3, [](MockBicycle* ptr){delete[] ptr;});
     }
 }
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_MakeShared)
+{
+    {
+        SharedPtr<MockBicycle> sp1 = makeShared<MockBicycle>("Trek's Émonda", 60, 59);
+        SharedPtr<MockBicycle> sp2 = sp1;
+        EXPECT_CALL(*sp1.get(), die());
+        EXPECT_EQ(sp1.get(), sp2.get());
+        EXPECT_EQ(sp1.useCount(), 2);
+        EXPECT_EQ(sp2.useCount(), 2);
+    }
+}

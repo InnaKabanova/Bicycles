@@ -8,6 +8,5 @@ int main()
 //    testUniquePtr_CustomDeleter();
 //    testUniquePtr_RawArray_CustomDeleter();
 //    testUniquePtr_OutputTest();
-//    testUniquePtr_MakeUnique();
     return 0;
 }

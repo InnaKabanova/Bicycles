@@ -418,6 +418,16 @@ std::ostream& operator<< (std::ostream& os, const SharedPtr<T>& sp)
     return (sp ? os << sp.get() : os << "nullptr");
 }
 
+/**
+ * Unlike the SharedPtr's constructors, makeShared doesn't provide an option to submit a custom
+ * deleter.
+ */
+template <typename T, typename... Args>
+SharedPtr<T> makeShared(Args&&... args)
+{
+    return SharedPtr<T>(new T(std::forward<Args>(args)...));
+}
+
 //--------------------------------------------------------------------------------------------------
 
 template<typename T>
