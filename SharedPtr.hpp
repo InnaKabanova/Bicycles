@@ -1,7 +1,9 @@
 #pragma once
 
+#include <exception>
 #include <functional>
 #include <iostream>
+#include <type_traits>
 
 namespace mybicycles
 {
@@ -9,6 +11,10 @@ namespace mybicycles
 template <typename T>
 class WeakPtr;
 
+template <typename T>
+class EnableSharedFromThis;
+
+//--------------------------------------------------------------------------------------------------
 template <typename T>
 struct ControlBlock
 {
@@ -40,6 +46,7 @@ struct ControlBlock
 template <typename T>
 const std::function<void(T*)> ControlBlock<T>::DEFAULT_DELETER = [](T* ptr){delete ptr;};
 
+//--------------------------------------------------------------------------------------------------
 /**
  * Smart pointer with semantics of shared ownership over the held resource.
  * CAUTION: not thread-safe
@@ -93,9 +100,29 @@ private:
     void incrStrongUseCount() noexcept;
     void deleteResource() noexcept;
 
+    /**
+     * Initialization method for types which are not derived from EnableSharedFromThis
+     */
+    template <typename U = T>
+    typename std::enable_if<!std::is_base_of<EnableSharedFromThis<U>, U>::value>::type
+    initResourceIfEnableSharedFromThis()
+    {
+        // Do nothing
+    }
+    /**
+     * Initialization method for types which are derived from EnableSharedFromThis
+     */
+    template <typename U = T>
+    typename std::enable_if<std::is_base_of<EnableSharedFromThis<U>, U>::value>::type
+    initResourceIfEnableSharedFromThis()
+    {
+        mCb->mPtr->mWeakThis = WeakPtr<T>(*this);
+    }
+
     ControlBlock<T>* mCb;
 };
 
+//--------------------------------------------------------------------------------------------------
 /**
  * Smart pointer with non-owning ("weak") reference to its held resource.
  * CAUTION: not thread-safe
@@ -130,6 +157,62 @@ private:
 
 //--------------------------------------------------------------------------------------------------
 
+class BadWeakPtr : public std::exception
+{
+public:
+    virtual const char* what() const noexcept override
+    {
+        return "No SharedPtr owns this object";
+    }
+};
+
+/**
+ * Utility class to allow a SharedPtr-managed object to create an additional SharedPtr to itself.
+ * For that, the object must be of a class which is _publicly_ derived from EnableSharedFromThis.
+ */
+template <typename T>
+class EnableSharedFromThis
+{
+    friend class SharedPtr<T>;
+
+protected:
+    EnableSharedFromThis() noexcept :
+        mWeakThis()
+    {
+    }
+    EnableSharedFromThis(const EnableSharedFromThis& rhs) noexcept = default;
+    EnableSharedFromThis& operator= (const EnableSharedFromThis& rhs) noexcept = default;
+    ~EnableSharedFromThis() = default;
+
+public:
+    /**
+     * Initialization of a EnableSharedFromThis-derived object is responsibility of a SharedPtr
+     * managing it. If this object is not referenced by any SharedPtr, then a call to
+     * getSharedFromThis will result in the BadWeakPtr exception.
+     */
+    SharedPtr<T> getSharedFromThis()
+    {
+        if (mWeakThis.isExpired())
+        {
+            throw BadWeakPtr();
+        }
+        return mWeakThis.lock();
+    }
+
+    /**
+     * If user doesn't want to handle possible BadWeakPtr exception, s/he can obtain a WeakPtr via
+     * getWeakFromThis and call WeakPtr<T>::lock (and then check the obtained SharedPtr for nullness).
+     */
+    WeakPtr<T> getWeakFromThis() noexcept
+    {
+        return mWeakThis;
+    }
+
+private:
+    WeakPtr<T> mWeakThis;
+};
+
+//--------------------------------------------------------------------------------------------------
 template<typename T>
 inline SharedPtr<T>::SharedPtr() noexcept :
     mCb(nullptr)
@@ -140,13 +223,16 @@ template<typename T>
 inline SharedPtr<T>::SharedPtr(T* raw) noexcept :
     mCb(new ControlBlock<T>(raw, 1))
 {
+    initResourceIfEnableSharedFromThis();
 }
 
 template<typename T>
 template<typename Deleter>
 inline SharedPtr<T>::SharedPtr(T* raw, Deleter deleter) noexcept :
     mCb(new ControlBlock<T>(raw, 1, deleter))
-{}
+{
+    initResourceIfEnableSharedFromThis();
+}
 
 template<typename T>
 inline SharedPtr<T>::~SharedPtr()
@@ -429,7 +515,6 @@ SharedPtr<T> makeShared(Args&&... args)
 }
 
 //--------------------------------------------------------------------------------------------------
-
 template<typename T>
 inline WeakPtr<T>::WeakPtr() noexcept :
     mCb(nullptr)
@@ -444,7 +529,6 @@ inline void WeakPtr<T>::incrWeakUseCount() noexcept
         mCb->mWeakUseCount++;
     }
 }
-
 
 template<typename T>
 inline WeakPtr<T>::WeakPtr(const SharedPtr<T>& sp) noexcept :

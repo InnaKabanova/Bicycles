@@ -305,3 +305,52 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_MakeShared)
         EXPECT_EQ(sp2.useCount(), 2);
     }
 }
+
+class SharedEnabledMockBicycle : public MockBicycle, public EnableSharedFromThis<SharedEnabledMockBicycle>
+{
+public:
+    SharedEnabledMockBicycle(std::string vendor) :
+        MockBicycle(vendor),
+        EnableSharedFromThis<SharedEnabledMockBicycle>()
+    {}
+};
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_EnableSharedFromThis_CorrectUse)
+{
+    // Two SharedPtr-s share the same object
+    SharedPtr<SharedEnabledMockBicycle> sp1 = makeShared<SharedEnabledMockBicycle>("Giant");
+    SharedPtr<SharedEnabledMockBicycle> sp2 = sp1->getSharedFromThis();
+    EXPECT_EQ(sp1.useCount(), 2);
+    EXPECT_EQ(sp2.useCount(), 2);
+
+    WeakPtr<SharedEnabledMockBicycle> wp = sp2->getWeakFromThis();
+    EXPECT_EQ(wp.useCount(), 2);
+    EXPECT_FALSE(wp.isExpired());
+
+    SharedPtr<SharedEnabledMockBicycle> sp3 = wp.lock();
+    EXPECT_EQ(sp1.useCount(), 3);
+    EXPECT_EQ(sp2.useCount(), 3);
+    EXPECT_EQ(sp3.useCount(), 3);
+}
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_EnableSharedFromThis_Misuse)
+{
+    SharedEnabledMockBicycle* mb = new SharedEnabledMockBicycle("Scott");
+    EXPECT_CALL(*mb, die());
+
+    {
+        WeakPtr<SharedEnabledMockBicycle> wp = mb->getWeakFromThis();
+        EXPECT_TRUE(wp.isExpired());
+        EXPECT_EQ(wp.useCount(), 0);
+
+        // getSharedFromThis is called without SharedPtr owning the caller
+        EXPECT_THROW(mb->getSharedFromThis(), BadWeakPtr);
+
+        // mb starts being owned, no BadWeakPtr exception expected now
+        SharedPtr<SharedEnabledMockBicycle> sp(mb);
+        EXPECT_NO_THROW(wp = mb->getSharedFromThis()); // update wp
+        EXPECT_FALSE(wp.isExpired());
+        EXPECT_EQ(wp.useCount(), 1);
+        EXPECT_EQ(sp.useCount(), 1);
+    }
+}
