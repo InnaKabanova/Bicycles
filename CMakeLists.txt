@@ -12,6 +12,7 @@ add_executable(MyBicycles main.cpp
     BicycleImpl.hpp
     Deleter.hpp
     Examples.hpp
+    EnableSharedFromThis.hpp
 
     BicycleImpl.cpp
     Examples.cpp)

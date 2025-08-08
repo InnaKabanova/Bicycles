@@ -2,6 +2,7 @@
 
 #include "MockBicycle.hpp"
 #include "SharedPtr.hpp"
+#include "EnableSharedFromThis.hpp"
 
 using namespace testing;
 using namespace mybicycles;
@@ -304,4 +305,25 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_MakeShared)
         EXPECT_EQ(sp1.useCount(), 2);
         EXPECT_EQ(sp2.useCount(), 2);
     }
+}
+
+class SharedEnabledMockBicycle : public MockBicycle, public EnableSharedFromThis<SharedEnabledMockBicycle>
+{
+public:
+    SharedEnabledMockBicycle(std::string vendor) :
+        MockBicycle(vendor),
+        EnableSharedFromThis<SharedEnabledMockBicycle>()
+    {}
+
+    virtual ~SharedEnabledMockBicycle() = default;
+};
+
+TEST(BicyclesSharedPtrTestSuite, SharedPtr_EnableSharedFromThis)
+{
+    SharedPtr<SharedEnabledMockBicycle> sp1 = makeShared<SharedEnabledMockBicycle>("Giant");
+    sp1->enableSharedFromThis(sp1);
+
+    SharedPtr<SharedEnabledMockBicycle> sp2 = sp1->getSharedFromThis();
+    // EXPECT_EQ(sp1.useCount(), 2);
+    // EXPECT_EQ(sp2.useCount(), 2);
 }
