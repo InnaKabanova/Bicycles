@@ -1,6 +1,4 @@
-#include "Examples.hpp"
-
-#include <memory>
+#include "Examples/UniquePtr_Example.hpp"
 
 int main()
 {

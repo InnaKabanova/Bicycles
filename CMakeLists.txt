@@ -11,10 +11,12 @@ add_executable(MyBicycles main.cpp
     Bicycle.hpp
     BicycleImpl.hpp
     Deleter.hpp
-    Examples.hpp
+    Examples/UniquePtr_Example.hpp
 
     BicycleImpl.cpp
-    Examples.cpp)
+    Examples/UniquePtr_Example.cpp)
+
+target_include_directories(MyBicycles PRIVATE .)
 
 include(GNUInstallDirs)
 install(TARGETS MyBicycles
