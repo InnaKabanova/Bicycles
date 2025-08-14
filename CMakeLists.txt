@@ -12,9 +12,11 @@ add_executable(MyBicycles main.cpp
     BicycleImpl.hpp
     Deleter.hpp
     Examples/UniquePtr_Example.hpp
+    Examples/Allocator_Example.hpp
 
     BicycleImpl.cpp
-    Examples/UniquePtr_Example.cpp)
+    Examples/UniquePtr_Example.cpp
+    Examples/Allocator_Example.cpp)
 
 target_include_directories(MyBicycles PRIVATE .)
 

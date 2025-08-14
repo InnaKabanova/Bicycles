@@ -10,3 +10,4 @@ All my bicycles are covered by GoogleTest ('UnitTests' sub-project).
 ## Examples
 Code examples:
 * Usage of my self-written UniquePtr
+* Usage of a custom Allocator for an STL container

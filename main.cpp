@@ -1,4 +1,5 @@
 #include "Examples/UniquePtr_Example.hpp"
+#include "Examples/Allocator_Example.hpp"
 
 int main()
 {
@@ -6,5 +7,6 @@ int main()
 //    testUniquePtr_CustomDeleter();
 //    testUniquePtr_RawArray_CustomDeleter();
 //    testUniquePtr_OutputTest();
+    testMySimpleAllocator();
     return 0;
 }
