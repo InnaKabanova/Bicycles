@@ -60,7 +60,11 @@ public:
     void deallocate(T* mem, const size_t n)
     {
         std::cout << __PRETTY_FUNCTION__ << " | Deallocating num of objects: " << n << std::endl;
-        ::operator delete(mem, n);
+#if __cpp_sized_deallocation
+        ::operator delete(mem, n * sizeof(T));
+#else
+        delete (mem);
+#endif
     }
 
     template <typename U>

@@ -68,8 +68,7 @@ template <typename T, typename Deleter>
 inline UniquePtr<T, Deleter>::UniquePtr(UniquePtr<T, Deleter>&& rhs) noexcept :
     mPtr(nullptr)
 {
-    mPtr = rhs.mPtr;
-    rhs.mPtr = nullptr;
+    std::swap(mPtr, rhs.mPtr);
 }
 
 template <typename T, typename Deleter>
@@ -98,12 +97,16 @@ inline T* UniquePtr<T, Deleter>::release() noexcept
     return tmp;
 }
 
+
 template <typename T, typename Deleter>
 inline void UniquePtr<T, Deleter>::reset(T* ptr) noexcept
 {
-    T* tmp = mPtr;
-    mPtr = ptr;
-    Deleter::deletePtr(tmp);
+    if (mPtr != ptr)
+    {
+        T* tmp = mPtr;
+        mPtr = ptr;
+        Deleter::deletePtr(tmp);
+    }
 }
 
 template <typename T, typename Deleter>
@@ -115,10 +118,7 @@ inline void UniquePtr<T, Deleter>::reset(UniquePtr<T, Deleter>&& rhs) noexcept
 template <typename T, typename Deleter>
 inline void UniquePtr<T, Deleter>::swap(UniquePtr<T, Deleter>& rhs) noexcept
 {
-    // Self-assignment is safe here
-    T* tmp = mPtr;
-    mPtr = rhs.mPtr;
-    rhs.mPtr = tmp;
+    std::swap(mPtr, rhs.mPtr);
 }
 
 template <typename T, typename Deleter>
@@ -199,10 +199,7 @@ inline bool UniquePtr<T, Deleter>::operator>=(const UniquePtr<T, Deleter>& rhs) 
 template <typename T, typename Deleter>
 void UniquePtr<T, Deleter>::swap(UniquePtr<T, Deleter>& lhs, UniquePtr<T, Deleter>& rhs) noexcept
 {
-    // Self-assignment is safe here
-    T* tmp = lhs.mPtr;
-    lhs.mPtr = rhs.mPtr;
-    rhs.mPtr = tmp;
+    lhs.swap(rhs);
 }
 
 template <typename T, typename Deleter>

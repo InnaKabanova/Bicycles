@@ -208,7 +208,13 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_Swap_BoolOperators)
 
         sp1.reset();
         EXPECT_TRUE(sp1 == nullptr);
+        EXPECT_TRUE(sp1 == SharedPtr<MockBicycle>());
+        EXPECT_FALSE(sp2 == SharedPtr<MockBicycle>());
+
         EXPECT_FALSE(sp1 != nullptr);
+        EXPECT_FALSE(sp1 != SharedPtr<MockBicycle>());
+        EXPECT_TRUE(sp2 != SharedPtr<MockBicycle>());
+
         EXPECT_TRUE(sp2);
         EXPECT_FALSE(sp1);
     }
@@ -243,19 +249,23 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_OtherComparisons)
 
     EXPECT_TRUE(sp1 < sp2);
     EXPECT_FALSE(sp2 < sp1);
+    EXPECT_FALSE(sp2 < SharedPtr<MockBicycle>());
 
     EXPECT_TRUE(sp2 > sp1);
     EXPECT_FALSE(sp1 > sp2);
+    EXPECT_TRUE(sp2 > SharedPtr<MockBicycle>());
 
     EXPECT_TRUE(sp1 <= sp2);
     EXPECT_TRUE(sp1 <= sp1);
     EXPECT_FALSE(sp2 <= sp1);
     EXPECT_TRUE(sp2 <= sp3);
+    EXPECT_FALSE(sp2 <= SharedPtr<MockBicycle>());
 
     EXPECT_TRUE(sp2 >= sp1);
     EXPECT_TRUE(sp2 >= sp2);
     EXPECT_FALSE(sp1 >= sp2);
     EXPECT_TRUE(sp2 >= sp3);
+    EXPECT_TRUE(sp2 >= SharedPtr<MockBicycle>());
 }
 
 void deleterFunc(MockBicycle* ptr)
@@ -331,6 +341,11 @@ TEST(BicyclesSharedPtrTestSuite, SharedPtr_EnableSharedFromThis_CorrectUse)
     EXPECT_EQ(sp1.useCount(), 3);
     EXPECT_EQ(sp2.useCount(), 3);
     EXPECT_EQ(sp3.useCount(), 3);
+
+    EXPECT_EQ(sp1, sp2);
+    EXPECT_EQ(sp2, sp3);
+
+    EXPECT_CALL(*sp1, die());
 }
 
 TEST(BicyclesSharedPtrTestSuite, SharedPtr_EnableSharedFromThis_Misuse)

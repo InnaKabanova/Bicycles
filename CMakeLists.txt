@@ -20,8 +20,9 @@ add_executable(MyBicycles main.cpp
 
 target_include_directories(MyBicycles PRIVATE .)
 
-include(GNUInstallDirs)
 install(TARGETS MyBicycles
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+add_subdirectory(UnitTests)

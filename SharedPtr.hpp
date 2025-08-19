@@ -280,11 +280,7 @@ inline SharedPtr<T>& SharedPtr<T>::operator=(const SharedPtr<T>& rhs) noexcept
 {
     if (this != &rhs)
     {
-        if (mCb)
-        {
-            // Free local held resource
-            reset();
-        }
+        reset();
 
         mCb = rhs.mCb;
         incrStrongUseCount();
@@ -304,10 +300,7 @@ inline SharedPtr<T>& SharedPtr<T>::operator=(SharedPtr<T>&& rhs) noexcept
 {
     if (this != &rhs)
     {
-        if (mCb)
-        {
-            reset(); // free local held resource
-        }
+        reset();
 
         mCb = rhs.mCb;
         rhs.mCb = nullptr;
@@ -327,11 +320,13 @@ inline void SharedPtr<T>::reset(T* rhs) noexcept
 
 template<typename T>
 template<typename Deleter>
-inline void SharedPtr<T>::reset(T* rhs, Deleter deleter) noexcept
+inline void SharedPtr<T>::reset(T* raw, Deleter deleter) noexcept
 {
     deleteResource();
-    // Not checking if rhs is null is intended here
-    mCb = new ControlBlock<T>(rhs, 1, deleter);
+    if (raw != nullptr)
+    {
+        mCb = new ControlBlock<T>(raw, 1, deleter);
+    }
 }
 
 template<typename T>
@@ -356,113 +351,68 @@ inline T& SharedPtr<T>::operator*() const
 {
     // Undefined behavior if mCb or mPtr is nullptr
     // May throw if mPtr's operator* throws
-    return *(mCb->mPtr);
+    return *get();
 }
 
 template<typename T>
 inline T* SharedPtr<T>::operator-> () const noexcept
 {
     // Undefined behavior if mCb or mPtr is nullptr
-    return mCb->mPtr;
+    return get();
 }
 
 template<typename T>
 inline SharedPtr<T>::operator bool() const noexcept
 {
-    if (!mCb)
-    {
-        return false;
-    }
-
-    return mCb->mPtr != nullptr;
+    return get() != nullptr;
 }
 
 template<typename T>
 inline bool SharedPtr<T>::operator==(std::nullptr_t) const noexcept
 {
-    if (!mCb)
-    {
-        return true;
-    }
-
-    return mCb->mPtr == nullptr;
+    return get() == nullptr;
 }
 
 template <typename T>
 inline bool SharedPtr<T>::operator==(const SharedPtr<T>& rhs) const noexcept
 {
-    if (!mCb)
-    {
-        return rhs.mCb == nullptr;
-    }
-
-    return mCb->mPtr == rhs.mCb->mPtr;
+    return get() == rhs.get();
 }
 
 template<typename T>
 inline bool SharedPtr<T>::operator!=(std::nullptr_t) const noexcept
 {
-    if (!mCb)
-    {
-        return false;
-    }
-
-    return mCb->mPtr != nullptr;
+    return get() != nullptr;
 }
 
 template <typename T>
 inline bool SharedPtr<T>::operator!=(const SharedPtr<T>& rhs) const noexcept
 {
-    if (!mCb)
-    {
-        return rhs.mCb != nullptr;
-    }
-
-    return mCb->mPtr != rhs.mCb->mPtr;
+    return get() != rhs.get();
 }
 
 template<typename T>
 inline bool SharedPtr<T>::operator<(const SharedPtr<T>& rhs) const noexcept
 {
-    if (!mCb)
-    {
-        return false;
-    }
-
-    return mCb->mPtr < rhs.mCb->mPtr;
+    return get() < rhs.get();
 }
 
 template<typename T>
 inline bool SharedPtr<T>::operator<=(const SharedPtr<T>& rhs) const noexcept
 {
-    if (!mCb)
-    {
-        return false;
-    }
-
-    return mCb->mPtr < rhs.mCb->mPtr || mCb->mPtr == rhs.mCb->mPtr;
+    return get() <= rhs.get();
 }
 
 template<typename T>
 inline bool SharedPtr<T>::operator>(const SharedPtr<T>& rhs) const noexcept
 {
-    if (!mCb)
-    {
-        return false;
-    }
-
-    return mCb->mPtr > rhs.mCb->mPtr;
+    return get() > rhs.get();
 }
 
 template<typename T>
 inline bool SharedPtr<T>::operator>=(const SharedPtr<T>& rhs) const noexcept
 {
-    if (!mCb)
-    {
-        return false;
-    }
-
-    return mCb->mPtr > rhs.mCb->mPtr || mCb->mPtr == rhs.mCb->mPtr;
+    return get() >= rhs.get();
 }
 
 template<typename T>
@@ -490,12 +440,7 @@ inline bool SharedPtr<T>::isUnique() const noexcept
 template<typename T>
 inline void SharedPtr<T>::swap(SharedPtr<T>& lhs, SharedPtr<T>& rhs)
 {
-    if (&lhs != &rhs)
-    {
-        SharedPtr<T> temp(lhs);
-        lhs = rhs;
-        rhs = temp;
-    }
+    std::swap(lhs.mCb, rhs.mCb);
 }
 
 template <typename T>
@@ -558,10 +503,9 @@ inline WeakPtr<T>& WeakPtr<T>::operator=(const WeakPtr& rhs) noexcept
 
 template<typename T>
 inline WeakPtr<T>::WeakPtr(WeakPtr&& rhs) noexcept :
-    mCb(rhs.mCb)
+    mCb(nullptr)
 {
-    incrWeakUseCount(); // to avoid destruction of expired control block if any
-    rhs.reset();
+    std::swap(mCb, rhs.mCb);
 }
 
 template<typename T>
@@ -570,9 +514,7 @@ inline WeakPtr<T>& WeakPtr<T>::operator=(WeakPtr&& rhs) noexcept
     if (this != &rhs)
     {
         reset();
-        mCb = rhs.mCb;
-        incrWeakUseCount(); // to avoid destruction of expired control block if any
-        rhs.reset();
+        std::swap(mCb, rhs.mCb);
     }
     return *this;
 }
