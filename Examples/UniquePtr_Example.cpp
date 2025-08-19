@@ -1,7 +1,7 @@
 #include "UniquePtr_Example.hpp"
 
 #include "BicycleImpl.hpp"
-#include "UniquePtr.hpp"
+#include "MemoryManagement/UniquePtr.hpp"
 
 using namespace mybicycles;
 

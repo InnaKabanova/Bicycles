@@ -1,6 +1,8 @@
 #include "Allocator_Example.hpp"
 #include "BicycleImpl.hpp"
+#include "MemoryManagement/MySimpleAllocator.hpp"
 
+#include <iostream>
 #include <vector>
 #include <list>
 #include <map>

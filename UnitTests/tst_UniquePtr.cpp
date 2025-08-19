@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "MockBicycle.hpp"
-#include "UniquePtr.hpp"
+#include "MemoryManagement/UniquePtr.hpp"
 
 using namespace testing;
 using namespace mybicycles;

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "MockBicycle.hpp"
-#include "SharedPtr.hpp"
+#include "MemoryManagement/SharedPtr.hpp"
 
 using namespace testing;
 using namespace mybicycles;

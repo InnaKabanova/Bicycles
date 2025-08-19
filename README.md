@@ -1,9 +1,11 @@
 ## Bicycles
 My "reinventions of a bicycle" (aka "reinventions of a wheel") for the sake of tackling different aspects of C++:
-* UniquePtr
-* SharedPtr
-* WeakPtr
-* EnableSharedFromThis
+* MemoryManagement
+   - UniquePtr
+   - SharedPtr
+   - WeakPtr
+   - EnableSharedFromThis
+   - MySimpleAllocator (a custom Allocator for an STL container)
 
 All my bicycles are covered by GoogleTest ('UnitTests' sub-project). 
 

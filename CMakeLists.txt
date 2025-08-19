@@ -5,17 +5,20 @@ project(MyBicycles LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(MyBicycles main.cpp
-    SharedPtr.hpp
-    UniquePtr.hpp
+add_executable(MyBicycles
+    main.cpp
     Bicycle.hpp
     BicycleImpl.hpp
-    Deleter.hpp
-    Examples/UniquePtr_Example.hpp
-    Examples/Allocator_Example.hpp
-
     BicycleImpl.cpp
+
+    MemoryManagement/Deleter.hpp
+    MemoryManagement/MySimpleAllocator.hpp
+    MemoryManagement/SharedPtr.hpp
+    MemoryManagement/UniquePtr.hpp
+
+    Examples/UniquePtr_Example.hpp
     Examples/UniquePtr_Example.cpp
+    Examples/Allocator_Example.hpp
     Examples/Allocator_Example.cpp)
 
 target_include_directories(MyBicycles PRIVATE .)

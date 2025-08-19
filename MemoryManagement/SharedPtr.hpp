@@ -101,7 +101,7 @@ private:
     void deleteResource() noexcept;
 
     /**
-     * Initialization method for types which are not derived from EnableSharedFromThis
+     * Initialization method for types which are not derived from @EnableSharedFromThis
      */
     template <typename U = T>
     typename std::enable_if<!std::is_base_of<EnableSharedFromThis<U>, U>::value>::type
@@ -110,7 +110,7 @@ private:
         // Do nothing
     }
     /**
-     * Initialization method for types which are derived from EnableSharedFromThis
+     * Initialization method for types which are derived from @EnableSharedFromThis
      */
     template <typename U = T>
     typename std::enable_if<std::is_base_of<EnableSharedFromThis<U>, U>::value>::type
@@ -167,7 +167,7 @@ public:
 };
 
 /**
- * Utility class to allow a SharedPtr-managed object to create an additional SharedPtr to itself.
+ * Utility class to allow a @SharedPtr-managed object to create an additional @SharedPtr to itself.
  * For that, the object must be of a class which is _publicly_ derived from EnableSharedFromThis.
  */
 template <typename T>
@@ -186,9 +186,9 @@ protected:
 
 public:
     /**
-     * Initialization of a EnableSharedFromThis-derived object is responsibility of a SharedPtr
-     * managing it. If this object is not referenced by any SharedPtr, then a call to
-     * getSharedFromThis will result in the BadWeakPtr exception.
+     * Initialization of a EnableSharedFromThis-derived object is responsibility of a @SharedPtr
+     * managing it. If this object is not referenced by any @SharedPtr, then a call to
+     * getSharedFromThis will result in the @BadWeakPtr exception.
      */
     SharedPtr<T> getSharedFromThis()
     {
@@ -200,8 +200,8 @@ public:
     }
 
     /**
-     * If user doesn't want to handle possible BadWeakPtr exception, s/he can obtain a WeakPtr via
-     * getWeakFromThis and call WeakPtr<T>::lock (and then check the obtained SharedPtr for nullness).
+     * If user doesn't want to handle possible @BadWeakPtr exception, s/he can obtain a @WeakPtr via
+     * getWeakFromThis and call @WeakPtr<T>::lock (and then check the obtained @SharedPtr for nullness).
      */
     WeakPtr<T> getWeakFromThis() noexcept
     {
