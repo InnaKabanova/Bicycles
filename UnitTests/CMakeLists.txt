@@ -27,6 +27,7 @@ endif()
 add_executable(MyBicyclesTest
     main.cpp
     MockBicycle.hpp
+    tst_Allocator.cpp
     tst_UniquePtr.cpp
     tst_SharedPtr.cpp
     tst_WeakPtr.cpp)
@@ -34,7 +35,7 @@ add_executable(MyBicyclesTest
 target_include_directories(MyBicyclesTest PRIVATE ..)
 add_test(NAME MyBicyclesTest COMMAND MyBicyclesTest)
 
-target_link_libraries(MyBicyclesTest PRIVATE GTest::GTest gmock Threads::Threads)
+target_link_libraries(MyBicyclesTest PRIVATE LibBicycles GTest::GTest gmock Threads::Threads)
 if (GMock_FOUND)
     target_link_libraries(MyBicyclesTest INTERFACE GTest::GMock)
 endif()

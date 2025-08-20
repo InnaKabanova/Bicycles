@@ -1,6 +1,6 @@
 #include "Allocator_Example.hpp"
 #include "BicycleImpl.hpp"
-#include "MemoryManagement/MySimpleAllocator.hpp"
+#include "MemoryManagement/MyAllocator.hpp"
 
 #include <iostream>
 #include <vector>
@@ -9,13 +9,13 @@
 
 void testMySimpleAllocator()
 {
-    using mybicycles::BicycleImpl;
+    using namespace mybicycles;
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
     {
         const int BICYCLE_LOGGING = true; // to see when Bicycle's ctor & dtor are called
         std::cout << "=======================std::vector:=======================" << std::endl;
-        std::vector<BicycleImpl, MySimpleAllocator<BicycleImpl>> v;
+        std::vector<BicycleImpl, MyAllocator<BicycleImpl>> v;
         v.push_back({"Bicycle1", BICYCLE_LOGGING});
         v.push_back({"Bicycle2", BICYCLE_LOGGING});
         v.push_back({"Bicycle3", BICYCLE_LOGGING});
@@ -25,7 +25,7 @@ void testMySimpleAllocator()
 
     {
         std::cout << "=======================std::list:=======================" << std::endl;
-        std::list<BicycleImpl, MySimpleAllocator<BicycleImpl>> l;
+        std::list<BicycleImpl, MyAllocator<BicycleImpl>> l;
         l.push_back({"Bicycle1"});
         l.push_back({"Bicycle2"});
         l.push_back({"Bicycle3"});
@@ -33,7 +33,7 @@ void testMySimpleAllocator()
 
     {
         std::cout << "=======================std::map:=======================" << std::endl;
-        std::map<int, BicycleImpl, std::less<int>, MySimpleAllocator<std::pair<const int, BicycleImpl>>> m;
+        std::map<int, BicycleImpl, std::less<int>, MyAllocator<std::pair<const int, BicycleImpl>>> m;
         m.emplace(1, "Bicycle1");
         m.emplace(2, "Bicycle2");
         m.emplace(3, "Bicycle3");
