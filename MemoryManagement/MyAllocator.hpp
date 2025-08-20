@@ -7,9 +7,9 @@
 #include "SharedPtr.hpp"
 
 /*
-NOTES:
+NOTES ON ALLOCATORS:
 
-In terms of STL, an allocator is used to acquire/release memory and to construct/destroy the
+In terms of STL containers, an allocator is used to acquire/release memory and to construct/destroy
 elements in that memory. A custom allocator for an STL container must meet the following
 requirements:
 - define a type alias for value_type
@@ -22,7 +22,7 @@ requirements:
 
 All the requirements are here: https://en.cppreference.com/w/cpp/named_req/Allocator.html
 
-The implementation of many allocator requirements is optional because all AllocatorAwareContainer-s
+Implementation of many allocator requirements is optional because all AllocatorAwareContainer-s
 access allocators indirectly through std::allocator_traits, and std::allocator_traits supplies the
 default implementation of those requirements.
 
@@ -49,6 +49,8 @@ public:
         using other = MyAllocator<U, SegmentManagerType>;
     };
 
+    // Size of a memory segment this allocator can operate in case it was default-constructed and
+    // thus was not provided a segment to manage.
     static const size_t DEFAULT_SEGMENT_SIZE; // bytes
 
 //--------------------------------------------------------------------------------------------------
@@ -56,21 +58,32 @@ public:
     {
         if (mLog)
         {
-            std::cout << __PRETTY_FUNCTION__ << " | Allocating num of objects: " << n << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << " | Allocating num of objects: " << n <<
+                                                " | " << n * sizeof(T) << " bytes are required" << std::endl;
         }
         if (0 == n || !mSegmentManager)
         {
             throw std::bad_alloc();
         }
-        T* ret = static_cast<T*>(mSegmentManager->alloc(n * sizeof(T)));
-        return ret;
+
+        size_t neededBytes = n * sizeof(T);
+        void* mem = mSegmentManager->alloc(neededBytes);
+        if (nullptr == mem)
+        {
+            std::string errMsg = "Segment large enough is not found (" + std::to_string(neededBytes)
+                                                                       + " bytes were requested)";
+            throw std::runtime_error(errMsg.c_str());
+        }
+
+        return static_cast<T*>(mem);
     }
 
     void deallocate(T* mem, const size_t n)
     {
         if (mLog)
         {
-            std::cout << __PRETTY_FUNCTION__ << " | Deallocating num of objects: " << n << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << " | Deallocating num of objects: " << n <<
+                                                " | " << n * sizeof(T) << " bytes are to be freed" << std::endl;
         }
         if (mSegmentManager)
         {
@@ -81,15 +94,15 @@ public:
 //--------------------------------------------------------------------------------------------------
     MyAllocator() noexcept :
         mSegmentManager(nullptr),
-        mLog(true)
+        mLog(false)
     {
         memset(mDefaultSegment, '0', DEFAULT_SEGMENT_SIZE);
-        mSegmentManager = makeShared<SegmentManagerType>(mDefaultSegment/* base segment addr*/,
+        mSegmentManager = makeShared<SegmentManagerType>(mDefaultSegment/* base segment addr */,
                                                          DEFAULT_SEGMENT_SIZE,
-                                                         false/* no owning*/);
+                                                         false/* no owning */);
     }
 
-    MyAllocator(SegmentManagerType segmentManager, bool loggingOn) noexcept :
+    MyAllocator(const SharedPtr<SegmentManagerType>& segmentManager, bool loggingOn = false) noexcept :
         mSegmentManager(segmentManager),
         mLog(loggingOn)
     {
@@ -105,6 +118,7 @@ public:
         mSegmentManager(std::move(rhs.mSegmentManager)),
         mLog(rhs.mLog)
     {
+        rhs.mSegmentManager.reset();
         rhs.mLog = false;
     }
 
@@ -126,6 +140,7 @@ public:
             mSegmentManager.reset();
             mSegmentManager = std::move(rhs.mSegmentManager);
             mLog = rhs.mLog;
+            rhs.mSegmentManager = nullptr;
             rhs.mLog = false;
         }
         return *this;
@@ -141,7 +156,9 @@ private:
     bool mLog;
 };
 
+// Keeping this one very low, because it imposes a serious memory overhead for each MyAllocator object,
+// either default-constructed or given a memory segment to manage
 template <typename T, typename SegmentManagerType>
-const size_t MyAllocator<T, SegmentManagerType>::DEFAULT_SEGMENT_SIZE = 256; // bytes
+const size_t MyAllocator<T, SegmentManagerType>::DEFAULT_SEGMENT_SIZE = 128; // bytes
 
 } // mybicycles
