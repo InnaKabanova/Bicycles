@@ -3,7 +3,6 @@
 #include <cstring>
 #include <iostream>
 
-#include "SimpleSegmentManager.hpp"
 #include "SharedPtr.hpp"
 
 /*
@@ -36,24 +35,16 @@ an allocator instance for those different types.
 namespace mybicycles
 {
 
-template <typename T, typename SegmentManagerType = SimpleSegmentManager>
-class MyAllocator
+/**
+ * Common functionality for the MyAllocator* custom allocators.
+ */
+template <typename T, typename SegmentManagerType>
+class MyAllocatorBase
 {
 public:
     using value_type = T;
     using size_type = size_t;
 
-    template <typename U>
-    struct rebind
-    {
-        using other = MyAllocator<U, SegmentManagerType>;
-    };
-
-    // Size of a memory segment this allocator can operate in case it was default-constructed and
-    // thus was not provided a segment to manage.
-    static const size_t DEFAULT_SEGMENT_SIZE; // bytes
-
-//--------------------------------------------------------------------------------------------------
     T* allocate(const size_t n)
     {
         if (mLog)
@@ -91,74 +82,79 @@ public:
         }
     }
 
-//--------------------------------------------------------------------------------------------------
-    MyAllocator() noexcept :
-        mSegmentManager(nullptr),
-        mLog(false)
+    SharedPtr<SegmentManagerType> getSegmentManager() const
     {
-        memset(mDefaultSegment, '0', DEFAULT_SEGMENT_SIZE);
-        mSegmentManager = makeShared<SegmentManagerType>(mDefaultSegment/* base segment addr */,
-                                                         DEFAULT_SEGMENT_SIZE,
-                                                         false/* no owning */);
+        return mSegmentManager;
     }
 
-    MyAllocator(const SharedPtr<SegmentManagerType>& segmentManager, bool loggingOn = false) noexcept :
+    bool isLoggingEnabled() const
+    {
+        return mLog;
+    }
+
+protected:
+    void setSegmentManager(const SharedPtr<SegmentManagerType>& segmentManager)
+    {
+        mSegmentManager = segmentManager;
+    }
+
+    MyAllocatorBase(bool loggingOn = false) noexcept :
+        mSegmentManager(nullptr),
+        mLog(loggingOn)
+    {
+    }
+
+    MyAllocatorBase(const SharedPtr<SegmentManagerType>& segmentManager, bool loggingOn = false) noexcept :
         mSegmentManager(segmentManager),
         mLog(loggingOn)
     {
     }
 
-    MyAllocator(const MyAllocator& rhs) noexcept :
+    // Casting ctor
+    template <typename U>
+    MyAllocatorBase(const MyAllocatorBase<U, SegmentManagerType>& rhs) noexcept :
+        mSegmentManager(rhs.getSegmentManager()),
+        mLog(rhs.isLoggingEnabled())
+    {
+    }
+
+    MyAllocatorBase(const MyAllocatorBase& rhs) noexcept :
         mSegmentManager(rhs.mSegmentManager),
         mLog(rhs.mLog)
     {
     }
 
-    MyAllocator(MyAllocator&& rhs) noexcept :
+    MyAllocatorBase(MyAllocatorBase&& rhs) noexcept :
         mSegmentManager(std::move(rhs.mSegmentManager)),
         mLog(rhs.mLog)
     {
-        rhs.mSegmentManager.reset();
+        rhs.mSegmentManager = nullptr;
         rhs.mLog = false;
     }
 
-    MyAllocator& operator=(const MyAllocator& rhs) noexcept
+    MyAllocatorBase& operator=(const MyAllocatorBase& rhs) noexcept
     {
-        if (this != &rhs)
-        {
-            mSegmentManager.reset();
-            mSegmentManager = rhs.mSegmentManager;
-            mLog = rhs.mLog;
-        }
+        // this != &rhs check to be performed by Derived classes
+        mSegmentManager.reset();
+        mSegmentManager = rhs.mSegmentManager;
+        mLog = rhs.mLog;
         return *this;
     }
 
-    MyAllocator& operator=(MyAllocator&& rhs) noexcept
+    MyAllocatorBase& operator=(MyAllocatorBase&& rhs) noexcept
     {
-        if (this != &rhs)
-        {
-            mSegmentManager.reset();
-            mSegmentManager = std::move(rhs.mSegmentManager);
-            mLog = rhs.mLog;
-            rhs.mSegmentManager = nullptr;
-            rhs.mLog = false;
-        }
+        // this != &rhs check to be performed by Derived classes
+        mSegmentManager.reset();
+        mSegmentManager = std::move(rhs.mSegmentManager);
+        mLog = rhs.mLog;
+        rhs.mSegmentManager = nullptr;
+        rhs.mLog = false;
         return *this;
     }
 
-    ~MyAllocator() = default;
-
-//--------------------------------------------------------------------------------------------------
-private:
-    char mDefaultSegment[DEFAULT_SEGMENT_SIZE];
-
+protected:
     SharedPtr<SegmentManagerType> mSegmentManager;
     bool mLog;
 };
-
-// Keeping this one very low, because it imposes a serious memory overhead for each MyAllocator object,
-// either default-constructed or given a memory segment to manage
-template <typename T, typename SegmentManagerType>
-const size_t MyAllocator<T, SegmentManagerType>::DEFAULT_SEGMENT_SIZE = 128; // bytes
 
 } // mybicycles

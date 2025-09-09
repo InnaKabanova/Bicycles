@@ -66,6 +66,7 @@ public:
     SharedPtr& operator= (const SharedPtr& rhs) noexcept;
     SharedPtr(SharedPtr&& rhs) noexcept;
     SharedPtr& operator= (SharedPtr&& rhs) noexcept;
+    SharedPtr& operator=(std::nullptr_t) noexcept;
 
     ~SharedPtr();
 
@@ -305,6 +306,13 @@ inline SharedPtr<T>& SharedPtr<T>::operator=(SharedPtr<T>&& rhs) noexcept
         mCb = rhs.mCb;
         rhs.mCb = nullptr;
     }
+    return *this;
+}
+
+template<typename T>
+SharedPtr<T>& SharedPtr<T>::operator=(std::nullptr_t) noexcept
+{
+    reset();
     return *this;
 }
 

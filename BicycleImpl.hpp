@@ -101,6 +101,10 @@ public:
         }
     }
 
+    bool operator<(const BicycleImpl& rhs) const {
+        return mVendor < rhs.mVendor;
+    }
+
     virtual void ringBell() const override
     {
         std::cout << "Caution! Bike " << mVendor << " is on its way!" << std::endl;

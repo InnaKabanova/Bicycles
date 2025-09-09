@@ -1,71 +1,146 @@
 #include <gtest/gtest.h>
 
-#include "MockBicycle.hpp"
-#include "MemoryManagement/MyAllocator.hpp"
+#include "BicycleImpl.hpp"
+#include "MemoryManagement/MyAllocatorOnStack.hpp"
+#include "MemoryManagement/MyAllocatorNonOwning.hpp"
 
 #include <vector>
 #include <list>
 #include <map>
+#include <set>
 
 using namespace testing;
 using namespace mybicycles;
 
-TEST(BicyclesCustomAllocatorTestSuite, Allocator_CompilationTest)
+TEST(BicyclesCustomAllocatorsTestSuite, BasicCompilationTest)
 {
     // Make sure that our Allocator implementation corresponds to STL containers' requirements
     // (and so they compile together):
-    std::vector<int, MyAllocator<int>> vec1;
-    std::vector<int, MyAllocator<int, DummySegmentManager>> vec2;
+    std::vector<int, MyAllocatorOnStack<int, 128>> vec1;
+    std::vector<int, MyAllocatorOnStack<int, 128, DummySegmentManager>> vec2;
 
-    // Make sure our Allocator can receive to-be-managed memory segment as a parameter:
+    // Submit a to-be-managed memory segment as a parameter to MyAllocatorNonOwning:
     const size_t segSize = 128;
-    char segment[segSize];
-    SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(segment, segSize);
-    MyAllocator<int, SimpleSegmentManager> myal(ssm);
-    std::vector<int, MyAllocator<int, SimpleSegmentManager>> vec3(myal);
+    char seg[segSize];
+    SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(seg, segSize);
+    MyAllocatorNonOwning<int, SimpleSegmentManager> myal(ssm);
+    std::vector<int, MyAllocatorNonOwning<int, SimpleSegmentManager>> vec3(myal);
 }
 
-TEST(BicyclesCustomAllocatorTestSuite, Allocator_ContainerObjects)
+TEST(BicyclesCustomAllocatorsTestSuite, BasicNegativeCase)
 {
-    // Test allocator with different containers with memory pre-allocated on heap.
-    // Make sure all the objects are properly constructed & destructed as containers expand.
-    // Test the case when multiple containers of different types use the same Allocator.
-    const size_t segSize = 4096; // 4KB
-    char* segment = (char*)malloc(segSize);
-    SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(segment,
-                                                                           segSize,
-                                                                           true,
-                                                                           [](char* segment,size_t){ free(segment); });
-    MyAllocator<BicycleImpl, SimpleSegmentManager> myal(ssm, true);
-
-    std::cout << "Sizeof BicycleImpl: " << sizeof(BicycleImpl) << std::endl;
-    const size_t elNum = 32;
-
-    std::cout << "=======================std::vector=======================" << std::endl;
-    std::vector<BicycleImpl, MyAllocator<BicycleImpl, SimpleSegmentManager>> vec(myal);
-    for (int i = 0; i < elNum; i++)
-    {
-        vec.push_back({"Bicycle"});
-    }
-    EXPECT_EQ(vec.size(), elNum);
-    vec.clear();
-    vec.shrink_to_fit();
-
-    std::cout << "=======================std::list=========================" << std::endl;
-    std::list<BicycleImpl, MyAllocator<std::_List_node<mybicycles::BicycleImpl>, SimpleSegmentManager>> l(
-                MyAllocator<std::_List_node<mybicycles::BicycleImpl>, SimpleSegmentManager>(ssm, true));
-    l.push_back({"Bicycle"});
-
-
-
+    // Simulate an out-of-memory scenario
+    constexpr size_t SEG_SIZE = sizeof(BicycleImpl) - 1;
+    MyAllocatorOnStack<int, SEG_SIZE> myal;
+    std::vector<BicycleImpl, MyAllocatorOnStack<int, SEG_SIZE>> vec(myal);
+    EXPECT_THROW(vec.push_back({"BicycleX"}), std::runtime_error);
 }
 
-//TEST(BicyclesCustomAllocatorTestSuite, Allocator_NegativeCase)
-//{
-//    // TODO: Expect BadAlloc be thrown when Allocator runs out of pre-allocated memory
-//}
+template<typename MyBicyclesAllocator, typename MyBicyclesPairAllocator>
+void testAllocatorWithContainers(MyBicyclesAllocator myal)
+{
+    const size_t num = 16;
 
-//TEST(BicyclesCustomAllocatorTestSuite, Allocator_MultiThreadingScenario)
-//{
-//    // TODO: launch multiple threads competing for memory resource
-//}
+    {
+        std::cout << "=======================std::vector=======================" << std::endl;
+        std::vector<BicycleImpl, MyBicyclesAllocator> vec(myal);
+
+        for (int i = 0; i < num; i++)
+        {
+            vec.push_back({"Bicycle-V-" + std::to_string(i)});
+        }
+        EXPECT_EQ(vec.size(), num);
+
+        for (int i = 0; i < num; i++)
+        {
+            EXPECT_EQ(vec[i].getVendor(), "Bicycle-V-" + std::to_string(i));
+        }
+
+        vec.clear();
+        EXPECT_EQ(vec.size(), 0);
+        vec.shrink_to_fit();
+        EXPECT_EQ(vec.capacity(), 0);
+    }
+
+    {
+        std::cout << "=======================std::list=========================" << std::endl;
+        std::list<BicycleImpl, MyBicyclesAllocator> lst(myal);
+
+        for (int i = 0; i < num; i++)
+        {
+            lst.push_back({"Bicycle-L-" + std::to_string(i)});
+        }
+        EXPECT_EQ(lst.size(), num);
+
+        int index = 0;
+        for (const auto& l : lst)
+        {
+            EXPECT_EQ(l.getVendor(), "Bicycle-L-" + std::to_string(index++));
+        }
+        lst.clear();
+        EXPECT_EQ(lst.size(), 0);
+    }
+
+    {
+        std::cout << "=======================std::map===========================" << std::endl;
+        std::map<int, BicycleImpl, std::less<int>, MyBicyclesPairAllocator> mp(myal);
+
+        for (int i = 0; i < num; i++)
+        {
+            mp.emplace(i, BicycleImpl("Bicycle-M-" + std::to_string(i)));
+        }
+
+        for (int i = 0; i < num; i++)
+        {
+            EXPECT_EQ(mp.at(i).getVendor(), "Bicycle-M-" + std::to_string(i));
+        }
+        mp.clear();
+        EXPECT_EQ(mp.size(), 0);
+    }
+
+    {
+        std::cout << "=======================std::set===========================" << std::endl;
+        std::set<BicycleImpl, std::less<BicycleImpl>, MyBicyclesAllocator> st(myal);
+
+        for (int i = 0; i < num; i++)
+        {
+            st.emplace("Bicycle-S-" + std::to_string(i));
+        }
+        EXPECT_EQ(st.size(), num);
+
+        int index = 0;
+        for (const auto& s : st)
+        {
+            EXPECT_EQ(s.getVendor(), "Bicycle-S-" + std::to_string(index++));
+        }
+        st.clear();
+        EXPECT_EQ(st.size(), 0);
+    }
+}
+
+TEST(BicyclesCustomAllocatorsTestSuite, MyAllocatorOnStack_ContainerObjects)
+{
+    constexpr bool ALLOC_LOGGING = true;
+    constexpr size_t SEG_SIZE = 5120; // 5KB
+
+    using MyBicyclesAllocatorOnStack = MyAllocatorOnStack<BicycleImpl, SEG_SIZE, SimpleSegmentManager>;
+    using MyBicyclesPairAllocatorOnStack = MyAllocatorOnStack<std::pair<const int, BicycleImpl>, SEG_SIZE, SimpleSegmentManager>;
+
+    MyBicyclesAllocatorOnStack myal(ALLOC_LOGGING);
+    testAllocatorWithContainers<MyBicyclesAllocatorOnStack, MyBicyclesPairAllocatorOnStack>(myal);
+}
+
+TEST(BicyclesCustomAllocatorsTestSuite, MyAllocatorNonOwning_ContainerObjects)
+{
+    constexpr bool ALLOC_LOGGING = true;
+    constexpr size_t SEG_SIZE = 5120; // 5KB
+
+    using MyBicyclesAllocatorNonOwning = MyAllocatorNonOwning<BicycleImpl, SimpleSegmentManager>;
+    using MyBicyclesPairAllocatorNonOwning = MyAllocatorNonOwning<std::pair<const int, BicycleImpl>, SimpleSegmentManager>;
+
+    char* seg = (char*)malloc(SEG_SIZE);
+    SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(seg, SEG_SIZE);
+    MyBicyclesAllocatorNonOwning myal(ssm, ALLOC_LOGGING);
+    testAllocatorWithContainers<MyBicyclesAllocatorNonOwning, MyBicyclesPairAllocatorNonOwning>(myal);
+    free(seg);
+}

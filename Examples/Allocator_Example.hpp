@@ -1,6 +1,6 @@
 #pragma once
 
 /**
- * Demonstrates usage of @MySimpleAllocator
+ * Demonstrates usage of @MyAllocatorOnStack
  */
-void testMySimpleAllocator();
+void testMyAllocators();

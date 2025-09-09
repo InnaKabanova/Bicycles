@@ -1,43 +1,63 @@
 #include "Allocator_Example.hpp"
 #include "BicycleImpl.hpp"
-#include "MemoryManagement/MyAllocator.hpp"
+#include "MemoryManagement/MyAllocatorOnStack.hpp"
+#include "MemoryManagement/MyAllocatorNonOwning.hpp"
 
 #include <iostream>
 #include <vector>
 #include <list>
 #include <map>
 
-void testMySimpleAllocator()
+void testMyAllocators()
 {
-    using namespace mybicycles;
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    constexpr bool BICYCLE_LOGGING = true; // to see when Bicycle's ctor & dtor are called
+    constexpr size_t SEG_SIZE = 2048;
 
+    using namespace mybicycles;
+    using MyBicyclesAllocatorOnStack = MyAllocatorOnStack<BicycleImpl, SEG_SIZE>;
+    using MyBicyclesPairAllocatorOnStack = MyAllocatorOnStack<std::pair<const int, BicycleImpl>, SEG_SIZE>;
+    using MyBicyclesAllocatorNonOwning = MyAllocatorNonOwning<BicycleImpl>;
+    using MyBicyclesPairAllocatorNonOwning = MyAllocatorNonOwning<std::pair<const int, BicycleImpl>>;
+
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
     {
-        const int BICYCLE_LOGGING = true; // to see when Bicycle's ctor & dtor are called
-        std::cout << "=======================std::vector:=======================" << std::endl;
-        std::vector<BicycleImpl, MyAllocator<BicycleImpl>> v;
-        v.push_back({"Bicycle1", BICYCLE_LOGGING});
-        v.push_back({"Bicycle2", BICYCLE_LOGGING});
-        v.push_back({"Bicycle3", BICYCLE_LOGGING});
-        v.push_back({"Bicycle4", BICYCLE_LOGGING});
-        v.push_back({"Bicycle5", BICYCLE_LOGGING});
+
+        std::cout << "=======================std::vector:======================" << std::endl;
+        std::vector<BicycleImpl, MyBicyclesAllocatorOnStack> v1;
+        v1.push_back({"Bicycle1", BICYCLE_LOGGING});
+        v1.push_back({"Bicycle2", BICYCLE_LOGGING});
+        v1.push_back({"Bicycle3", BICYCLE_LOGGING});
+        v1.push_back({"Bicycle4", BICYCLE_LOGGING});
+        v1.push_back({"Bicycle5", BICYCLE_LOGGING});
+
+        char* seg = (char*)malloc(SEG_SIZE);
+        SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(seg,
+                                                                               SEG_SIZE);
+        MyBicyclesAllocatorNonOwning myal(ssm, true);
+        std::vector<BicycleImpl, MyBicyclesAllocatorNonOwning> v2(myal);
+        v1.push_back({"BicycleA", BICYCLE_LOGGING});
+        v1.push_back({"BicycleB", BICYCLE_LOGGING});
+        v1.push_back({"BicycleC", BICYCLE_LOGGING});
+        v1.push_back({"BicycleD", BICYCLE_LOGGING});
+        v1.push_back({"BicycleE", BICYCLE_LOGGING});
+        free(seg);
     }
 
     {
         std::cout << "=======================std::list:=======================" << std::endl;
-        std::list<BicycleImpl, MyAllocator<BicycleImpl>> l;
-        l.push_back({"Bicycle1"});
-        l.push_back({"Bicycle2"});
-        l.push_back({"Bicycle3"});
+        std::list<BicycleImpl, MyBicyclesAllocatorOnStack> l;
+        l.push_back({"Bicycle1", BICYCLE_LOGGING});
+        l.push_back({"Bicycle2", BICYCLE_LOGGING});
+        l.push_back({"Bicycle3", BICYCLE_LOGGING});
     }
 
     {
         std::cout << "=======================std::map:=======================" << std::endl;
-        std::map<int, BicycleImpl, std::less<int>, MyAllocator<std::pair<const int, BicycleImpl>>> m;
-        m.emplace(1, "Bicycle1");
-        m.emplace(2, "Bicycle2");
-        m.emplace(3, "Bicycle3");
+        std::map<int, BicycleImpl, std::less<int>, MyBicyclesPairAllocatorOnStack> m;
+        m.insert(std::make_pair(1, BicycleImpl("Bicycle1", BICYCLE_LOGGING)));
+        m.emplace(std::make_pair(2, BicycleImpl("Bicycle2", BICYCLE_LOGGING)));
+        m.emplace(std::make_pair(3, BicycleImpl("Bicycle3", BICYCLE_LOGGING)));
     }
 
-    std::cout << "============================================================= " << std::endl;
+    std::cout << "=======================std::map:=======================" << std::endl;
 }

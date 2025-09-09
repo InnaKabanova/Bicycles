@@ -12,13 +12,9 @@ namespace
 }
 
 SimpleSegmentManager::SimpleSegmentManager(char* segment,
-                                           size_t size,
-                                           bool isOwner,
-                                           Destroyer destroyer) :
+                                           size_t size) :
     mSegment(segment),
     mSegmentSize(size),
-    mIsOwner(isOwner),
-    mSegmentDestroyer(destroyer),
     mMutex(),
     mFreeList(nullptr)
 {
@@ -36,14 +32,6 @@ SimpleSegmentManager::SimpleSegmentManager(char* segment,
     mFreeList = (MemControlBlock*)mSegment;
     mFreeList->size = availableUnits - 1; // minus one unit for the initial control block itself
     mFreeList->next = mFreeList; // circular linked list
-}
-
-SimpleSegmentManager::~SimpleSegmentManager()
-{
-    if (mIsOwner && mSegmentDestroyer)
-    {
-        mSegmentDestroyer(mSegment, mSegmentSize);
-    }
 }
 
 void* SimpleSegmentManager::alloc(size_t neededBytes)
@@ -136,14 +124,10 @@ void SimpleSegmentManager::free(void* addr)
 }
 
 DummySegmentManager::DummySegmentManager(void* segment,
-                                         size_t size,
-                                         bool isOwner,
-                                         Destroyer destroyer)
+                                         size_t size)
 {
     (void)segment;
     (void)size;
-    (void)isOwner;
-    (void)destroyer;
 }
 
 void *DummySegmentManager::alloc(size_t neededBytes)

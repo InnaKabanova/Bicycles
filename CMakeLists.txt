@@ -11,7 +11,9 @@ add_library(LibBicycles
     BicycleImpl.cpp
 
     MemoryManagement/Deleter.hpp
-    MemoryManagement/MyAllocator.hpp
+    MemoryManagement/MyAllocatorBase.hpp
+    MemoryManagement/MyAllocatorOnStack.hpp
+    MemoryManagement/MyAllocatorNonOwning.hpp
     MemoryManagement/SimpleSegmentManager.hpp
     MemoryManagement/SimpleSegmentManager.cpp
     MemoryManagement/SharedPtr.hpp
