@@ -14,6 +14,8 @@ add_library(LibBicycles
     MemoryManagement/MyAllocatorBase.hpp
     MemoryManagement/MyAllocatorOnStack.hpp
     MemoryManagement/MyAllocatorNonOwning.hpp
+    MemoryManagement/DummySegmentManager.hpp
+    MemoryManagement/DummySegmentManager.cpp
     MemoryManagement/SimpleSegmentManager.hpp
     MemoryManagement/SimpleSegmentManager.cpp
     MemoryManagement/SharedPtr.hpp

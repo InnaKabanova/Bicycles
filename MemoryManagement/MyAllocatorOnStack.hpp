@@ -25,7 +25,8 @@ public:
         MyAllocatorBase<T, SegmentManagerType>(loggingOn)
     {
         memset(mDefaultSegment, '0', SEG_SIZE);
-        MyAllocatorBase<T, SegmentManagerType>::setSegmentManager(makeShared<SegmentManagerType>(mDefaultSegment, SEG_SIZE));
+        MyAllocatorBase<T, SegmentManagerType>::setSegmentManager(
+                    makeShared<SegmentManagerType>(mDefaultSegment, SEG_SIZE, loggingOn));
     }
 
     MyAllocatorOnStack(const MyAllocatorOnStack& rhs) noexcept :

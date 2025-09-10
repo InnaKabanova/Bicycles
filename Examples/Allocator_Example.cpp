@@ -10,8 +10,8 @@
 
 void testMyAllocators()
 {
-    constexpr bool BICYCLE_LOGGING = true; // to see when Bicycle's ctor & dtor are called
-    constexpr size_t SEG_SIZE = 2048;
+    constexpr bool BICYCLE_LOGGING = false; // to see when Bicycle's ctor & dtor are called
+    constexpr size_t SEG_SIZE = 1024;
 
     using namespace mybicycles;
     using MyBicyclesAllocatorOnStack = MyAllocatorOnStack<BicycleImpl, SEG_SIZE>;
@@ -20,35 +20,28 @@ void testMyAllocators()
     using MyBicyclesPairAllocatorNonOwning = MyAllocatorNonOwning<std::pair<const int, BicycleImpl>>;
 
     std::cout << __PRETTY_FUNCTION__ << std::endl;
-    {
 
+    {
         std::cout << "=======================std::vector:======================" << std::endl;
-        std::vector<BicycleImpl, MyBicyclesAllocatorOnStack> v1;
+
+        constexpr bool ALLOC_LOGGING = true;
+        MyBicyclesAllocatorOnStack myal(ALLOC_LOGGING);
+        std::vector<BicycleImpl, MyBicyclesAllocatorOnStack> v1(myal);
         v1.push_back({"Bicycle1", BICYCLE_LOGGING});
         v1.push_back({"Bicycle2", BICYCLE_LOGGING});
         v1.push_back({"Bicycle3", BICYCLE_LOGGING});
         v1.push_back({"Bicycle4", BICYCLE_LOGGING});
-        v1.push_back({"Bicycle5", BICYCLE_LOGGING});
-
-        char* seg = (char*)malloc(SEG_SIZE);
-        SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(seg,
-                                                                               SEG_SIZE);
-        MyBicyclesAllocatorNonOwning myal(ssm, true);
-        std::vector<BicycleImpl, MyBicyclesAllocatorNonOwning> v2(myal);
-        v1.push_back({"BicycleA", BICYCLE_LOGGING});
-        v1.push_back({"BicycleB", BICYCLE_LOGGING});
-        v1.push_back({"BicycleC", BICYCLE_LOGGING});
-        v1.push_back({"BicycleD", BICYCLE_LOGGING});
-        v1.push_back({"BicycleE", BICYCLE_LOGGING});
-        free(seg);
+        v1.clear();
+        v1.shrink_to_fit();
     }
 
     {
         std::cout << "=======================std::list:=======================" << std::endl;
-        std::list<BicycleImpl, MyBicyclesAllocatorOnStack> l;
+        MyBicyclesPairAllocatorOnStack myal2(true);
+        std::list<BicycleImpl, MyBicyclesAllocatorOnStack> l(myal2);
         l.push_back({"Bicycle1", BICYCLE_LOGGING});
         l.push_back({"Bicycle2", BICYCLE_LOGGING});
-        l.push_back({"Bicycle3", BICYCLE_LOGGING});
+        l.clear();
     }
 
     {
@@ -59,5 +52,5 @@ void testMyAllocators()
         m.emplace(std::make_pair(3, BicycleImpl("Bicycle3", BICYCLE_LOGGING)));
     }
 
-    std::cout << "=======================std::map:=======================" << std::endl;
+    std::cout << "END END END END" << std::endl;
 }

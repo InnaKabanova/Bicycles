@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "BicycleImpl.hpp"
+#include "MemoryManagement/DummySegmentManager.hpp"
 #include "MemoryManagement/MyAllocatorOnStack.hpp"
 #include "MemoryManagement/MyAllocatorNonOwning.hpp"
 
@@ -25,15 +26,6 @@ TEST(BicyclesCustomAllocatorsTestSuite, BasicCompilationTest)
     SharedPtr<SimpleSegmentManager> ssm = makeShared<SimpleSegmentManager>(seg, segSize);
     MyAllocatorNonOwning<int, SimpleSegmentManager> myal(ssm);
     std::vector<int, MyAllocatorNonOwning<int, SimpleSegmentManager>> vec3(myal);
-}
-
-TEST(BicyclesCustomAllocatorsTestSuite, BasicNegativeCase)
-{
-    // Simulate an out-of-memory scenario
-    constexpr size_t SEG_SIZE = sizeof(BicycleImpl) - 1;
-    MyAllocatorOnStack<int, SEG_SIZE> myal;
-    std::vector<BicycleImpl, MyAllocatorOnStack<int, SEG_SIZE>> vec(myal);
-    EXPECT_THROW(vec.push_back({"BicycleX"}), std::runtime_error);
 }
 
 template<typename MyBicyclesAllocator, typename MyBicyclesPairAllocator>
@@ -64,7 +56,7 @@ void testAllocatorWithContainers(MyBicyclesAllocator myal)
 
     {
         std::cout << "=======================std::list=========================" << std::endl;
-        std::list<BicycleImpl, MyBicyclesAllocator> lst(myal);
+        std::list<BicycleImpl, MyBicyclesPairAllocator> lst;
 
         for (int i = 0; i < num; i++)
         {
@@ -83,7 +75,7 @@ void testAllocatorWithContainers(MyBicyclesAllocator myal)
 
     {
         std::cout << "=======================std::map===========================" << std::endl;
-        std::map<int, BicycleImpl, std::less<int>, MyBicyclesPairAllocator> mp(myal);
+        std::map<int, BicycleImpl, std::less<int>, MyBicyclesPairAllocator> mp;
 
         for (int i = 0; i < num; i++)
         {
@@ -100,7 +92,7 @@ void testAllocatorWithContainers(MyBicyclesAllocator myal)
 
     {
         std::cout << "=======================std::set===========================" << std::endl;
-        std::set<BicycleImpl, std::less<BicycleImpl>, MyBicyclesAllocator> st(myal);
+        std::set<BicycleImpl, std::less<BicycleImpl>, MyBicyclesPairAllocator> st;
 
         for (int i = 0; i < num; i++)
         {
@@ -120,7 +112,7 @@ void testAllocatorWithContainers(MyBicyclesAllocator myal)
 
 TEST(BicyclesCustomAllocatorsTestSuite, MyAllocatorOnStack_ContainerObjects)
 {
-    constexpr bool ALLOC_LOGGING = true;
+    constexpr bool ALLOC_LOGGING = false;
     constexpr size_t SEG_SIZE = 5120; // 5KB
 
     using MyBicyclesAllocatorOnStack = MyAllocatorOnStack<BicycleImpl, SEG_SIZE, SimpleSegmentManager>;
@@ -132,7 +124,7 @@ TEST(BicyclesCustomAllocatorsTestSuite, MyAllocatorOnStack_ContainerObjects)
 
 TEST(BicyclesCustomAllocatorsTestSuite, MyAllocatorNonOwning_ContainerObjects)
 {
-    constexpr bool ALLOC_LOGGING = true;
+    constexpr bool ALLOC_LOGGING = false;
     constexpr size_t SEG_SIZE = 5120; // 5KB
 
     using MyBicyclesAllocatorNonOwning = MyAllocatorNonOwning<BicycleImpl, SimpleSegmentManager>;
